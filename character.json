@@ -1,0 +1,37 @@
+{
+    "name": "Gingus",
+    "race": "Human",
+    "class": "Barbarian",
+    "level": 1,
+    "proficiency": 2,
+    "stats": {
+        "STR": 20,
+        "DEX": 20,
+        "CON": 20,
+        "INT": 6,
+        "WIS": 6,
+        "CHA": 6
+    },
+    "weapons": {
+        "Longsword": {
+            "hit_mod": 2,
+            "damage_die": 6,
+            "damage_die_count": 1,
+            "damage_mod": 2
+        },
+        "Shortbow": {
+            "hit_mod": 2,
+            "damage_die": 6,
+            "damage_die_count": 1,
+            "damage_mod": 2
+        }
+    },
+    "inventory": [],
+    "gold": 10,
+    "notes": "",
+    "hp": {
+        "current": 12,
+        "max": 12
+    },
+    "ac": 14
+}
