@@ -1,5 +1,5 @@
 {
-    "name": "Gingus",
+    "name": "George",
     "race": "Human",
     "class": "Barbarian",
     "level": 1,
@@ -26,12 +26,91 @@
             "damage_mod": 2
         }
     },
-    "inventory": [],
+    "inventory": [
+        "banana",
+        "fish",
+        "rope",
+        "gun"
+    ],
     "gold": 10,
-    "notes": "",
+    "notes": "hello\nbanaa\nasdfasdf",
     "hp": {
         "current": 12,
         "max": 12
     },
-    "ac": 14
+    "ac": 14,
+    "skills": {
+        "Acrobatics": {
+            "ability": "DEX",
+            "prof": 2
+        },
+        "Animal Handling": {
+            "ability": "WIS",
+            "prof": 2
+        },
+        "Arcana": {
+            "ability": "INT",
+            "prof": 2
+        },
+        "Athletics": {
+            "ability": "STR",
+            "prof": 2
+        },
+        "Deception": {
+            "ability": "CHA",
+            "prof": 2
+        },
+        "History": {
+            "ability": "INT",
+            "prof": 2
+        },
+        "Insight": {
+            "ability": "WIS",
+            "prof": 2
+        },
+        "Intimidation": {
+            "ability": "CHA",
+            "prof": 2
+        },
+        "Investigation": {
+            "ability": "INT",
+            "prof": 2
+        },
+        "Medicine": {
+            "ability": "WIS",
+            "prof": 2
+        },
+        "Nature": {
+            "ability": "INT",
+            "prof": 2
+        },
+        "Perception": {
+            "ability": "WIS",
+            "prof": 2
+        },
+        "Performance": {
+            "ability": "CHA",
+            "prof": 2
+        },
+        "Persuasion": {
+            "ability": "CHA",
+            "prof": 2
+        },
+        "Religion": {
+            "ability": "INT",
+            "prof": 2
+        },
+        "Sleight of Hand": {
+            "ability": "DEX",
+            "prof": 2
+        },
+        "Stealth": {
+            "ability": "DEX",
+            "prof": 2
+        },
+        "Survival": {
+            "ability": "WIS",
+            "prof": 2
+        }
+    }
 }
