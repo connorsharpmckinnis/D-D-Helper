@@ -30,10 +30,11 @@
         "banana",
         "fish",
         "rope",
-        "gun"
+        "gun",
+        "two buns"
     ],
     "gold": 10,
-    "notes": "hello\nbanaa\nasdfasdf",
+    "notes": "hello\nbanaa\nasdfasdf\nasdf\nasdf\nasdf\nasdf\nasdf\nasdf\nasdf\nasdf\nasdf\nasdf",
     "hp": {
         "current": 12,
         "max": 12

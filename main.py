@@ -3,6 +3,23 @@ import tkinter as tk
 import json
 import platform
 
+from tkinter import ttk
+from ttkthemes import ThemedTk
+
+
+
+
+STYLE = {
+    "bg_main": "#9d9d9d",
+    "bg_frame": "#9d9d9d",
+    "accent": "#AFAFAF",
+    "accent2": "#2196F3",
+    "text": "#363636",
+    "font_title": ("Helvetica", 12, "bold"),
+    "font_normal": ("Helvetica", 10),
+}
+
+
 
 character = {
     "name": "Gingus",
@@ -104,17 +121,46 @@ def gui_app():
     except FileNotFoundError:
         pass  # stick with defaults if no file
 
-    root = tk.Tk()
-    root.title("D&D Helper")
+    root = ThemedTk(theme="black")
+    root.title("D&D Helper - Modern UI")
     root.geometry("800x600")
-    root.configure(bg="#f7f7f7")  # light gray background for the app
 
+    # Use the ThemedTk's current theme colors for accent and background
+    themed_style = ttk.Style(root)
+    # Remove border for pill shape
+    themed_style.layout("Accent.TButton", [
+        ("Button.padding", {"children": [
+            ("Button.label", {"side": "left", "expand": 1})
+        ], "sticky": "nswe"})
+    ])
+    # Get themed background and foreground if available
+    try:
+        accent_bg = STYLE["accent"]
+        accent_fg = STYLE["text"]
+    except Exception:
+        accent_bg = STYLE["accent"]
+        accent_fg = STYLE["text"]
+    themed_style.configure(
+        "Accent.TButton",
+        background=accent_bg,
+        foreground=accent_fg,
+        font=STYLE["font_normal"],
+        padding=(12, 6),  # pill shape
+        highlightthickness=0,
+        relief="flat",
+        borderwidth=0,
+        focuscolor=accent_bg
+    )
     
     # -- Outer frame with scrolling and scrollbar -- #
-    outer_frame = tk.Frame(root, bg="#f7f7f7")
+    # Use themed background for main backgrounds
+    arc_bg = themed_style.lookup("TFrame", "background", default="#ECECEC")
+    arc_fg = themed_style.lookup("TLabel", "foreground", default=STYLE["text"])
+    # Outer frame and canvas
+    outer_frame = tk.Frame(root, bg=arc_bg)
     outer_frame.pack(fill="both", expand=True)
 
-    canvas = tk.Canvas(outer_frame, bg="#f7f7f7", highlightthickness=0)
+    canvas = tk.Canvas(outer_frame, bg=arc_bg, highlightthickness=0)
     canvas.pack(side="left", fill="both", expand=True)
     
     scrollbar = tk.Scrollbar(outer_frame, orient="vertical", command=canvas.yview)
@@ -122,7 +168,7 @@ def gui_app():
     
     canvas.configure(yscrollcommand=scrollbar.set)
     
-    scrollable_frame = tk.Frame(canvas, bg="#f7f7f7")
+    scrollable_frame = tk.Frame(canvas, bg=arc_bg)
 
     scrollable_frame.bind(
         "<Configure>",
@@ -188,38 +234,40 @@ def gui_app():
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
     # --- Character Info ---
-    info_frame = tk.Frame(scrollable_frame, padx=10, pady=5, bg="#e0e0e0", relief="groove", bd=2)
-    info_frame.pack(fill="x")
+    info_frame = tk.Frame(scrollable_frame, padx=10, pady=10, bg=arc_bg, relief="flat")
+    info_frame.pack(fill="x", padx=6, pady=4)
 
-    tk.Label(info_frame, text="Character Name:", bg="#e0e0e0", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky="e")
-    name_entry = tk.Entry(info_frame, width=20)
+    tk.Label(info_frame, text="Character Name:", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"]).grid(row=0, column=0, sticky="e", padx=6, pady=4)
+    name_entry = tk.Entry(info_frame, width=20, bg=arc_bg, fg=arc_fg, insertbackground=arc_fg, font=STYLE["font_normal"])
     name_entry.insert(0, character["name"])
-    name_entry.grid(row=0, column=1, sticky="w")
+    name_entry.grid(row=0, column=1, sticky="w", padx=6, pady=4)
 
     tk.Label(
         info_frame,
-        text=f'Level {character["level"]} {character["race"]} {character["class"]}'
-    ).grid(row=0, column=2, padx=10)
+        text=f'Level {character["level"]} {character["race"]} {character["class"]}',
+        bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"]
+    ).grid(row=0, column=2, padx=10, pady=4)
 
     # --- Ability Checks ---
-    stats_frame = tk.LabelFrame(scrollable_frame, text="Ability Checks", padx=10, pady=5, bg="#f0f0ff", font=("Arial", 10, "bold"))
-    stats_frame.pack(fill="x", pady=5)
+    stats_frame = tk.LabelFrame(scrollable_frame, text="Ability Checks", padx=10, pady=5, bg=arc_bg, fg=arc_fg, font=STYLE["font_title"])
+    stats_frame.pack(fill="x", pady=6, padx=6)
 
     result_labels = {}
     for col, ability in enumerate(character["stats"].keys()):
-        btn = tk.Button(
+        btn = ttk.Button(
             stats_frame,
             text=f"{ability} ({mods[ability]})",
-            command=lambda a=ability: result_labels[a].config(text=ability_check(a))
+            command=lambda a=ability: result_labels[a].config(text=ability_check(a)),
+            style="Accent.TButton"
         )
-        btn.grid(row=0, column=col, padx=5, pady=2)
-        lbl = tk.Label(stats_frame, text="", bg="#f0f0ff")
-        lbl.grid(row=1, column=col)
+        btn.grid(row=0, column=col, padx=6, pady=4)
+        lbl = tk.Label(stats_frame, text="", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"])
+        lbl.grid(row=1, column=col, padx=6, pady=4)
         result_labels[ability] = lbl
         
     # --- Skills Section ---
-    skills_frame = tk.LabelFrame(scrollable_frame, text="Skills", padx=10, pady=5, bg="#f0fff0", font=("Arial", 10, "bold"))
-    skills_frame.pack(fill="x", padx=10, pady=5)
+    skills_frame = tk.LabelFrame(scrollable_frame, text="Skills", padx=10, pady=5, bg=arc_bg, fg=arc_fg, font=STYLE["font_title"])
+    skills_frame.pack(fill="x", padx=6, pady=6)
 
     skill_result_labels = {}
 
@@ -229,39 +277,36 @@ def gui_app():
         row = i // 3
         col = (i % 3) * 2  # leave space for button + label
 
-        btn = tk.Button(
+        btn = ttk.Button(
             skills_frame,
             text=f"{skill_name} ({mod:+})",
-            wraplength=150,
-            justify="center",
-            relief="flat",   # or "groove"/"ridge" if you want some border
-            bd=0,
             command=lambda s=skill_name: skill_result_labels[s].config(
                 text=f"{roll(20) + skill_modifier(s)}"
-            )
+            ),
+            style="Accent.TButton"
         )
-        btn.grid(row=row*2, column=col, sticky="w", pady=2)
+        btn.grid(row=row*2, column=col, sticky="w", pady=4, padx=6)
 
-        lbl = tk.Label(skills_frame, text="", bg="#f0fff0")
-        lbl.grid(row=row*2+1, column=col, sticky="w")
+        lbl = tk.Label(skills_frame, text="", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"])
+        lbl.grid(row=row*2+1, column=col, sticky="w", pady=4, padx=6)
 
         skill_result_labels[skill_name] = lbl
 
     # --- Custom Roller ---
-    roller_frame = tk.LabelFrame(scrollable_frame, text="Custom Roller", padx=10, pady=5, bg="#f0fff0", font=("Arial", 10, "bold"))
-    roller_frame.pack(fill="x", pady=5)
+    roller_frame = tk.LabelFrame(scrollable_frame, text="Custom Roller", padx=10, pady=5, bg=arc_bg, fg=arc_fg, font=STYLE["font_title"])
+    roller_frame.pack(fill="x", pady=6, padx=6)
 
-    dice_count_entry = tk.Entry(roller_frame, width=5)
+    dice_count_entry = tk.Entry(roller_frame, width=5, bg=arc_bg, fg=arc_fg, insertbackground=arc_fg, font=STYLE["font_normal"])
     dice_count_entry.insert(0, "1")
-    dice_count_entry.grid(row=0, column=0)
+    dice_count_entry.grid(row=0, column=0, padx=6, pady=4)
 
-    tk.Label(roller_frame, text="d", bg="#f0fff0").grid(row=0, column=1)
-    dice_sides_entry = tk.Entry(roller_frame, width=5)
+    tk.Label(roller_frame, text="d", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"]).grid(row=0, column=1, padx=6, pady=4)
+    dice_sides_entry = tk.Entry(roller_frame, width=5, bg=arc_bg, fg=arc_fg, insertbackground=arc_fg, font=STYLE["font_normal"])
     dice_sides_entry.insert(0, "20")
-    dice_sides_entry.grid(row=0, column=2)
+    dice_sides_entry.grid(row=0, column=2, padx=6, pady=4)
 
-    result_label = tk.Label(roller_frame, text="", bg="#f0fff0")
-    result_label.grid(row=1, column=0, columnspan=3, pady=5)
+    result_label = tk.Label(roller_frame, text="", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"])
+    result_label.grid(row=1, column=0, columnspan=3, pady=6, padx=6)
 
     def roll_custom():
         try:
@@ -272,87 +317,99 @@ def gui_app():
         except ValueError:
             result_label.config(text="Please enter valid numbers!")
 
-    roll_button = tk.Button(roller_frame, text="Roll!", command=roll_custom, relief="flat", bd=0, padx=5, pady=5, highlightthickness=0)
-    roll_button.grid(row=0, column=3, padx=10)
+    roll_button = ttk.Button(
+        roller_frame,
+        text="Roll!",
+        command=roll_custom,
+        style="Accent.TButton"
+    )
+    roll_button.grid(row=0, column=3, padx=10, pady=4)
 
     # --- Weapons ---
-    weapons_frame = tk.LabelFrame(scrollable_frame, text="Weapons", padx=10, pady=5,  bg="#f7f0ff", font=("Arial", 10, "bold"))
-    weapons_frame.pack(fill="x", pady=5)
+    weapons_frame = tk.LabelFrame(scrollable_frame, text="Weapons", padx=10, pady=5,  bg=arc_bg, fg=arc_fg, font=STYLE["font_title"])
+    weapons_frame.pack(fill="x", pady=6, padx=6)
 
     for row, (weapon_name, weapon) in enumerate(character["weapons"].items()):
-        tk.Label(weapons_frame, text=weapon_name, bg="#f7f0ff").grid(row=row, column=0, padx=5, sticky="w")
+        tk.Label(weapons_frame, text=weapon_name, bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"]).grid(row=row, column=0, padx=6, pady=4, sticky="w")
 
-        hit_result = tk.Label(weapons_frame, text="", bg="#f7f0ff")
-        hit_result.grid(row=row, column=2, padx=5)
-        tk.Button(
-            weapons_frame, text="Roll to Hit",
+        hit_result = tk.Label(weapons_frame, text="", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"])
+        hit_result.grid(row=row, column=2, padx=6, pady=4)
+        ttk.Button(
+            weapons_frame,
+            text="Roll to Hit",
             command=lambda w=weapon, lbl=hit_result: lbl.config(
                 text=f"Hit: {roll(20) + w['hit_mod']}",
-                background="FFFFFF"
+                background=arc_bg
             ),
-            bg="#FFFFFF", relief="raised", bd=2, padx=5, pady=3
-        ).grid(row=row, column=1, padx=5)
+            style="Accent.TButton"
+        ).grid(row=row, column=1, padx=6, pady=4)
 
-        dmg_result = tk.Label(weapons_frame, text="", bg="#f7f0ff")
-        dmg_result.grid(row=row, column=4, padx=5)
-        tk.Button(
-            weapons_frame, text="Roll Damage",
+        dmg_result = tk.Label(weapons_frame, text="", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"])
+        dmg_result.grid(row=row, column=4, padx=6, pady=4)
+        ttk.Button(
+            weapons_frame,
+            text="Roll Damage",
             command=lambda w=weapon, lbl=dmg_result: lbl.config(
                 text=f"Damage: {roll(w['damage_die'], w['damage_die_count']) + w['damage_mod']}",
             ),
-            bg="#ffd0d0", relief="raised", bd=2, padx=5, pady=3
-        ).grid(row=row, column=3, padx=5)
+            style="Accent.TButton"
+        ).grid(row=row, column=3, padx=6, pady=4)
 
     # --- Combat Stats ---
-    combat_frame = tk.LabelFrame(scrollable_frame, text="Combat Stats", padx=10, pady=5, bg="#f0fff7", font=("Arial", 10, "bold"))
-    combat_frame.pack(fill="x", pady=5)
+    combat_frame = tk.LabelFrame(scrollable_frame, text="Combat Stats", padx=10, pady=5, bg=arc_bg, fg=arc_fg, font=STYLE["font_title"])
+    combat_frame.pack(fill="x", pady=6, padx=6)
 
-    tk.Label(combat_frame, text="HP:", bg="#f0fff7").grid(row=0, column=0, sticky="e")
-    hp_current_entry = tk.Entry(combat_frame, width=5)
+    tk.Label(combat_frame, text="HP:", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"]).grid(row=0, column=0, sticky="e", padx=6, pady=4)
+    hp_current_entry = tk.Entry(combat_frame, width=5, bg=arc_bg, fg=arc_fg, insertbackground=arc_fg, font=STYLE["font_normal"])
     hp_current_entry.insert(0, character["hp"]["current"])
-    hp_current_entry.grid(row=0, column=1)
-    tk.Label(combat_frame, text="/", bg="#f0fff7").grid(row=0, column=2)
-    hp_max_entry = tk.Entry(combat_frame, width=5)
+    hp_current_entry.grid(row=0, column=1, padx=6, pady=4)
+    tk.Label(combat_frame, text="/", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"]).grid(row=0, column=2, padx=6, pady=4)
+    hp_max_entry = tk.Entry(combat_frame, width=5, bg=arc_bg, fg=arc_fg, insertbackground=arc_fg, font=STYLE["font_normal"])
     hp_max_entry.insert(0, character["hp"]["max"])
-    hp_max_entry.grid(row=0, column=3)
+    hp_max_entry.grid(row=0, column=3, padx=6, pady=4)
 
-    tk.Label(combat_frame, text="AC:", bg="#f0fff7").grid(row=1, column=0, sticky="e")
-    ac_entry = tk.Entry(combat_frame, width=5)
+    tk.Label(combat_frame, text="AC:", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"]).grid(row=1, column=0, sticky="e", padx=6, pady=4)
+    ac_entry = tk.Entry(combat_frame, width=5, bg=arc_bg, fg=arc_fg, insertbackground=arc_fg, font=STYLE["font_normal"])
     ac_entry.insert(0, character["ac"])
-    ac_entry.grid(row=1, column=1)
+    ac_entry.grid(row=1, column=1, padx=6, pady=4)
 
     def roll_initiative():
         roll_val = random.randint(1, 20)
         total = roll_val + mods["DEX"]
         initiative_result_label.config(text=total)
 
-    tk.Label(combat_frame, text="Initiative:", bg="#f0fff7").grid(row=2, column=0, sticky="e")
-    initiative_button = tk.Button(combat_frame, text=f"{mods['DEX']:+}", command=roll_initiative)
-    initiative_button.grid(row=2, column=1)
-    initiative_result_label = tk.Label(combat_frame, text="", bg="#f0fff7")
-    initiative_result_label.grid(row=2, column=2, sticky="w")
+    tk.Label(combat_frame, text="Initiative:", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"]).grid(row=2, column=0, sticky="e", padx=6, pady=4)
+    initiative_button = ttk.Button(
+        combat_frame,
+        text=f"{mods['DEX']:+}",
+        command=roll_initiative,
+        style="Accent.TButton"
+    )
+    initiative_button.grid(row=2, column=1, padx=6, pady=4)
+    initiative_result_label = tk.Label(combat_frame, text="", bg=arc_bg, fg=arc_fg, font=STYLE["font_normal"])
+    initiative_result_label.grid(row=2, column=2, sticky="w", padx=6, pady=4)
 
     # --- Notes and Inventory (side by side) ---
-    bottom_frame = tk.Frame(scrollable_frame, padx=10, pady=5, bg="#f7f7f7")
-    bottom_frame.pack(fill="both", expand=True)
+    bottom_frame = tk.Frame(scrollable_frame, padx=10, pady=5, bg=arc_bg)
+    bottom_frame.pack(fill="both", expand=True, padx=6, pady=6)
 
-    notes_frame = tk.LabelFrame(bottom_frame, text="Notes", padx=10, pady=5)
-    notes_frame.pack(side="left", fill="both", expand=True, padx=5)
+    notes_frame = tk.LabelFrame(bottom_frame, text="Notes", padx=10, pady=5, bg=arc_bg, fg=arc_fg, font=STYLE["font_title"])
+    notes_frame.pack(side="left", fill="both", expand=True, padx=6, pady=6)
 
-    notes_text = tk.Text(notes_frame, height=10, wrap="word")
+    notes_text = tk.Text(notes_frame, height=10, wrap="word", bg=arc_bg, fg=arc_fg, insertbackground=arc_fg, selectbackground=STYLE["accent2"], font=STYLE["font_normal"])
     notes_text.insert("1.0", character["notes"])
-    notes_text.pack(fill="both", expand=True)
+    notes_text.pack(fill="both", expand=True, padx=6, pady=6)
 
-    inventory_frame = tk.LabelFrame(bottom_frame, text="Inventory", padx=10, pady=5)
-    inventory_frame.pack(side="right", fill="both", expand=True, padx=5)
+    inventory_frame = tk.LabelFrame(bottom_frame, text="Inventory", padx=10, pady=5, bg=arc_bg, fg=arc_fg, font=STYLE["font_title"])
+    inventory_frame.pack(side="right", fill="both", expand=True, padx=6, pady=6)
 
-    inventory_listbox = tk.Listbox(inventory_frame, height=10)
-    inventory_listbox.pack(fill="both", expand=True)
+    inventory_listbox = tk.Listbox(inventory_frame, height=10, bg=arc_bg, fg=arc_fg, selectbackground=STYLE["accent2"], font=STYLE["font_normal"])
+    inventory_listbox.pack(fill="both", expand=True, padx=6, pady=6)
     for item in character["inventory"]:
         inventory_listbox.insert(tk.END, item)
 
-    new_item_entry = tk.Entry(inventory_frame)
-    new_item_entry.pack(fill="x", pady=2)
+    new_item_entry = tk.Entry(inventory_frame, bg="#FFFFFF", fg=arc_fg, insertbackground=arc_fg, font=STYLE["font_normal"])
+    new_item_entry.pack(fill="x", pady=6, padx=6)
 
     def add_item():
         item = new_item_entry.get().strip()
@@ -368,14 +425,34 @@ def gui_app():
             inventory_listbox.delete(index)
             del character["inventory"][index]
 
-    tk.Button(inventory_frame, text="Add", command=add_item, bg="#d0ffd0", relief="raised", bd=2, padx=5, pady=3).pack(side="left", padx=2, pady=2)
-    tk.Button(inventory_frame, text="Remove Selected", command=remove_item, bg="#ffd0d0", relief="raised", bd=2, padx=5, pady=3).pack(side="right", padx=2, pady=2)
+    ttk.Button(
+        inventory_frame,
+        text="Add",
+        command=add_item,
+        style="Accent.TButton"
+    ).pack(side="left", padx=6, pady=6)
+    ttk.Button(
+        inventory_frame,
+        text="Remove Selected",
+        command=remove_item,
+        style="Accent.TButton"
+    ).pack(side="right", padx=6, pady=6)
 
     # --- Save / Load Buttons ---
-    control_frame = tk.Frame(scrollable_frame, pady=10, bg="#f7f7f7")
-    control_frame.pack(fill="x")
-    tk.Button(control_frame, text="Save Character", command=save_to_file, bg="#d0ffd0", relief="raised", bd=2, padx=10, pady=5).pack(side="left", padx=10)
-    tk.Button(control_frame, text="Load Character", command=load_from_file, bg="#ffffc0", relief="raised", bd=2, padx=10, pady=5).pack(side="left", padx=10)
+    control_frame = tk.Frame(scrollable_frame, pady=10, bg=arc_bg)
+    control_frame.pack(fill="x", padx=6, pady=6)
+    ttk.Button(
+        control_frame,
+        text="Save Character",
+        command=save_to_file,
+        style="Accent.TButton"
+    ).pack(side="left", padx=10, pady=6)
+    ttk.Button(
+        control_frame,
+        text="Load Character",
+        command=load_from_file,
+        style="Accent.TButton"
+    ).pack(side="left", padx=10, pady=6)
 
     root.mainloop()
     
