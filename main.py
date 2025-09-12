@@ -213,7 +213,7 @@ def gui_app():
             command=lambda a=ability: result_labels[a].config(text=ability_check(a))
         )
         btn.grid(row=0, column=col, padx=5, pady=2)
-        lbl = tk.Label(stats_frame, text="")
+        lbl = tk.Label(stats_frame, text="", bg="#f0f0ff")
         lbl.grid(row=1, column=col)
         result_labels[ability] = lbl
         
@@ -223,22 +223,28 @@ def gui_app():
 
     skill_result_labels = {}
 
-    for col, skill_name in enumerate(character["skills"].keys()):
+    for i, skill_name in enumerate(character["skills"].keys()):
         mod = skill_modifier(skill_name)
+
+        row = i // 3
+        col = (i % 3) * 2  # leave space for button + label
 
         btn = tk.Button(
             skills_frame,
             text=f"{skill_name} ({mod:+})",
-            wraplength=50,
+            wraplength=150,
             justify="center",
+            relief="flat",   # or "groove"/"ridge" if you want some border
+            bd=0,
             command=lambda s=skill_name: skill_result_labels[s].config(
                 text=f"{roll(20) + skill_modifier(s)}"
             )
         )
-        btn.grid(row=0, column=col, sticky="w", pady=2)
+        btn.grid(row=row*2, column=col, sticky="w", pady=2)
 
-        lbl = tk.Label(skills_frame, text="")
-        lbl.grid(row=1, column=col, sticky="w")
+        lbl = tk.Label(skills_frame, text="", bg="#f0fff0")
+        lbl.grid(row=row*2+1, column=col, sticky="w")
+
         skill_result_labels[skill_name] = lbl
 
     # --- Custom Roller ---
@@ -249,12 +255,12 @@ def gui_app():
     dice_count_entry.insert(0, "1")
     dice_count_entry.grid(row=0, column=0)
 
-    tk.Label(roller_frame, text="d").grid(row=0, column=1)
+    tk.Label(roller_frame, text="d", bg="#f0fff0").grid(row=0, column=1)
     dice_sides_entry = tk.Entry(roller_frame, width=5)
     dice_sides_entry.insert(0, "20")
     dice_sides_entry.grid(row=0, column=2)
 
-    result_label = tk.Label(roller_frame, text="")
+    result_label = tk.Label(roller_frame, text="", bg="#f0fff0")
     result_label.grid(row=1, column=0, columnspan=3, pady=5)
 
     def roll_custom():
@@ -266,7 +272,7 @@ def gui_app():
         except ValueError:
             result_label.config(text="Please enter valid numbers!")
 
-    roll_button = tk.Button(roller_frame, text="Roll!", command=roll_custom, bg="#ffc0c0", relief="raised", bd=2, padx=5, pady=5)
+    roll_button = tk.Button(roller_frame, text="Roll!", command=roll_custom, relief="flat", bd=0, padx=5, pady=5, highlightthickness=0)
     roll_button.grid(row=0, column=3, padx=10)
 
     # --- Weapons ---
@@ -274,7 +280,7 @@ def gui_app():
     weapons_frame.pack(fill="x", pady=5)
 
     for row, (weapon_name, weapon) in enumerate(character["weapons"].items()):
-        tk.Label(weapons_frame, text=weapon_name).grid(row=row, column=0, padx=5, sticky="w")
+        tk.Label(weapons_frame, text=weapon_name, bg="#f7f0ff").grid(row=row, column=0, padx=5, sticky="w")
 
         hit_result = tk.Label(weapons_frame, text="", bg="#f7f0ff")
         hit_result.grid(row=row, column=2, padx=5)
@@ -282,8 +288,9 @@ def gui_app():
             weapons_frame, text="Roll to Hit",
             command=lambda w=weapon, lbl=hit_result: lbl.config(
                 text=f"Hit: {roll(20) + w['hit_mod']}",
+                background="FFFFFF"
             ),
-            bg="#ffd0d0", relief="raised", bd=2, padx=5, pady=3
+            bg="#FFFFFF", relief="raised", bd=2, padx=5, pady=3
         ).grid(row=row, column=1, padx=5)
 
         dmg_result = tk.Label(weapons_frame, text="", bg="#f7f0ff")
@@ -300,16 +307,16 @@ def gui_app():
     combat_frame = tk.LabelFrame(scrollable_frame, text="Combat Stats", padx=10, pady=5, bg="#f0fff7", font=("Arial", 10, "bold"))
     combat_frame.pack(fill="x", pady=5)
 
-    tk.Label(combat_frame, text="HP:").grid(row=0, column=0, sticky="e")
+    tk.Label(combat_frame, text="HP:", bg="#f0fff7").grid(row=0, column=0, sticky="e")
     hp_current_entry = tk.Entry(combat_frame, width=5)
     hp_current_entry.insert(0, character["hp"]["current"])
     hp_current_entry.grid(row=0, column=1)
-    tk.Label(combat_frame, text="/").grid(row=0, column=2)
+    tk.Label(combat_frame, text="/", bg="#f0fff7").grid(row=0, column=2)
     hp_max_entry = tk.Entry(combat_frame, width=5)
     hp_max_entry.insert(0, character["hp"]["max"])
     hp_max_entry.grid(row=0, column=3)
 
-    tk.Label(combat_frame, text="AC:").grid(row=1, column=0, sticky="e")
+    tk.Label(combat_frame, text="AC:", bg="#f0fff7").grid(row=1, column=0, sticky="e")
     ac_entry = tk.Entry(combat_frame, width=5)
     ac_entry.insert(0, character["ac"])
     ac_entry.grid(row=1, column=1)
@@ -319,10 +326,10 @@ def gui_app():
         total = roll_val + mods["DEX"]
         initiative_result_label.config(text=total)
 
-    tk.Label(combat_frame, text="Initiative:").grid(row=2, column=0, sticky="e")
+    tk.Label(combat_frame, text="Initiative:", bg="#f0fff7").grid(row=2, column=0, sticky="e")
     initiative_button = tk.Button(combat_frame, text=f"{mods['DEX']:+}", command=roll_initiative)
     initiative_button.grid(row=2, column=1)
-    initiative_result_label = tk.Label(combat_frame, text="")
+    initiative_result_label = tk.Label(combat_frame, text="", bg="#f0fff7")
     initiative_result_label.grid(row=2, column=2, sticky="w")
 
     # --- Notes and Inventory (side by side) ---
