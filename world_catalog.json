@@ -1,0 +1,18 @@
+{
+    "Continents of Tehar": "Tehar has two continents: Namer and Asope.",
+    "Geography of Tehar": "The two continents of Tehar, Namer and Asope, are separated by a vast ocean.",
+    "Gimbo": "A rainforest continent, akin to the Amazon, known for its dense jungles, abundant biodiversity, and humid climate. Rivers carve through the landscape, and exotic flora and fauna thrive in its lush environment.",
+    "category": "Geography and Regions",
+    "Asope": {
+        "entry": "A culture in Tehar with influences vaguely resembling European societies.",
+        "category": "Cultures and Societies"
+    },
+    "Asope and Namer": {
+        "entry": "Tehar has two continents: Asope and Namer.",
+        "category": "Geography and Regions"
+    },
+    "Asope's Mountain Ranges": {
+        "entry": "Asope features crisscrossing mountain ranges that loosely divide the continent into four distinct regions.",
+        "category": "Geography and Regions"
+    }
+}
