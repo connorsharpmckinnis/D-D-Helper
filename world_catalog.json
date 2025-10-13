@@ -1,8 +1,4 @@
 {
-    "Continents of Tehar": "Tehar has two continents: Namer and Asope.",
-    "Geography of Tehar": "The two continents of Tehar, Namer and Asope, are separated by a vast ocean.",
-    "Gimbo": "A rainforest continent, akin to the Amazon, known for its dense jungles, abundant biodiversity, and humid climate. Rivers carve through the landscape, and exotic flora and fauna thrive in its lush environment.",
-    "category": "Geography and Regions",
     "Asope": {
         "entry": "A culture in Tehar with influences vaguely resembling European societies.",
         "category": "Cultures and Societies"
@@ -11,8 +7,24 @@
         "entry": "Tehar has two continents: Asope and Namer.",
         "category": "Geography and Regions"
     },
-    "Asope's Mountain Ranges": {
-        "entry": "Asope features crisscrossing mountain ranges that loosely divide the continent into four distinct regions.",
+    "Tehar": {
+        "entry": "The name of the world.",
+        "category": "Nations and Kingdoms"
+    },
+    "Continents and Oceans of Tehar": {
+        "entry": "Tehar has two major continents, Asope and Namer",
         "category": "Geography and Regions"
+    },
+    "Golmang": {
+        "entry": "Golmang is a warring kingdom in Tehar.",
+        "category": "Nations and Kingdoms"
+    },
+    "Trade between Asope and Namer": {
+        "entry": "Asope and Namer engage in significant trade across the Glass Sea.",
+        "category": "Economy and Trade"
+    },
+    "The World Eyes": {
+        "entry": "The Namer Republic is establishing a network of powerful magical monitoring stations, known as World Eyes, throughout the neutral ocean territories. These stations are ostensibly for observation but are primarily used to spy on foreign powers, particularly those in Asope, creating significant geopolitical tension.",
+        "category": "Politics and Government"
     }
 }
