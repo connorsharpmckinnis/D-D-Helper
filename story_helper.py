@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- File Setup ---
-selected_file = None
+selected_file = "world_catalog.json"
 file_label = None
 
 # --- Gemini Client Setup ---
@@ -59,6 +59,8 @@ def choose_file():
         title="Select World Catalog",
         filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")]
     )
+    file_label.config(text=os.path.basename(selected_file))
+
     if not selected_file:
         selected_file = "world_catalog.json"  # fallback default
         
