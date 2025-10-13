@@ -181,12 +181,31 @@ chat_display.insert(tk.END, "Worldbuilding Assistant Initialized.\n\n")
 entry_field = tk.Entry(root, width=80, font=("Consolas", 11))
 entry_field.pack(padx=10, pady=(0, 10))
 
-def display_message(sender, message, color="black"):
+def display_message(sender, message, msg_type=None, color=None):
+    """
+    Display a message in the chat_display with color coding.
+    
+    msg_type: "user", "ai", "system" (defaults to black if unknown)
+    color: optional override for msg_type
+    """
+    # Define default colors per message type
+    type_colors = {
+        "user": "blue",
+        "ai": "purple",
+        "system": "green"
+    }
 
+    # Decide which color to use
+    final_color = color or type_colors.get(msg_type, "black")
+
+    # Insert sender name
     chat_display.insert(tk.END, f"{sender}: ", ("sender",))
     chat_display.insert(tk.END, f"{message}\n\n", ("color",))
+
+    # Configure tags
     chat_display.tag_configure("sender", font=("Consolas", 11, "bold"))
-    chat_display.tag_configure("color", foreground=color, font=("Consolas", 11))
+    chat_display.tag_configure("color", foreground=final_color, font=("Consolas", 11))
+
     chat_display.see(tk.END)
 
 # --- Main Logic ---
@@ -195,7 +214,7 @@ def handle_user_input(event=None):
     if not user_text:
         return
     entry_field.delete(0, tk.END)
-    display_message("You", user_text, "blue")
+    display_message("You", user_text, msg_type="user",color="blue")
     
     world_context = get_world_context()
     
@@ -206,7 +225,7 @@ def handle_user_input(event=None):
     if response.candidates[0].content.parts[0].function_call:
         function_call = response.candidates[0].content.parts[0].function_call
         entry_name = save_catalog_entry(function_call)
-        display_message("SYSTEM", f"📘 New entry added: {entry_name[0]}", "green")
+        display_message("SYSTEM", f"📘 New entry added: {entry_name[0]}", msg_type="system", color="green")
 
         follow_up = (
             f"SYSTEM MESSAGE: Added '{entry_name}' to catalog. "
@@ -215,7 +234,7 @@ def handle_user_input(event=None):
         response = chat.send_message(message=follow_up)
 
     bot_reply = response.text.strip() if hasattr(response, "text") else "[No reply]"
-    display_message("AI", bot_reply, "purple")
+    display_message("AI", bot_reply, msg_type="ai", color="purple")
 
 entry_field.bind("<Return>", handle_user_input)
 

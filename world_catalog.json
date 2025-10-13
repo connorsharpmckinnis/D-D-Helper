@@ -30,5 +30,13 @@
     "Kino": {
         "entry": "Kino is the goddess of the sun, worshipped in Golmang.",
         "category": "Deities and Pantheons"
+    },
+    "Squishy": {
+        "entry": "A mysterious life form found in the world.",
+        "category": "Flora and Fauna"
+    },
+    "ASDF": {
+        "entry": "ASDF",
+        "category": "Flora and Fauna"
     }
 }
