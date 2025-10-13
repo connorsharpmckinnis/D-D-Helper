@@ -1,385 +1,435 @@
+"""
+Simple, readable D&D helper UI (Tkinter).
 
+Features:
+- Load / save character (JSON)
+- Ability checks & skills (shows modifiers)
+- Custom dice roller
+- Weapon To-Hit and Damage rolls
+- Initiative roll
+- Notes and inventory add/remove
+- Scrollable UI that works on Windows/macOS/Linux
+
+Keep it simple: small helper functions, clear variable names, and inline comments.
+"""
 
 import random
-import tkinter as tk
 import json
+import copy
 import platform
+import tkinter as tk
+from tkinter import ttk
+
+# Optional theme; if not installed we gracefully fall back to plain Tk.
+try:
+    from ttkthemes import ThemedTk
+    def make_root():
+        return ThemedTk(theme="black")
+except Exception:
+    def make_root():
+        return tk.Tk()
 
 
-character = {
+# ---------- Simple constants & defaults ----------
+CHAR_FILE = "character.json"
+
+STYLE = {
+    "font_title": ("Helvetica", 12, "bold"),
+    "font_normal": ("Helvetica", 10),
+}
+
+# Default character data (keeps the UI working if no file is present)
+DEFAULT_CHARACTER = {
     "name": "Gingus",
     "race": "Human",
     "class": "Barbarian",
     "level": 1,
     "proficiency": 2,
-    "stats": {
-        "STR": 20, 
-        "DEX": 20,
-        "CON": 20,
-        "INT": 6,
-        "WIS": 6,
-        "CHA": 6
-    },
+    "stats": {"STR": 20, "DEX": 20, "CON": 20, "INT": 6, "WIS": 6, "CHA": 6},
     "weapons": {
-        "Longsword": {
-        "hit_mod": 2,
-        "damage_die": 6,
-        "damage_die_count": 1,
-        "damage_mod": 2,
-    },
-    "Shortbow": {
-        "hit_mod": 2,
-        "damage_die": 6,
-        "damage_die_count": 1,
-        "damage_mod": 2,
-    }
+        "Longsword": {"hit_mod": 2, "damage_die": 6, "damage_die_count": 1, "damage_mod": 2},
+        "Shortbow":   {"hit_mod": 2, "damage_die": 6, "damage_die_count": 1, "damage_mod": 2},
     },
     "inventory": [],
     "gold": 10,
     "notes": "",
-    "hp": {
-        "current": 12,
-        "max": 12
-    }, 
+    "hp": {"current": 12, "max": 12},
     "ac": 14,
     "skills": {
         "Athletics": {"ability": "STR", "prof": 2},
         "Acrobatics": {"ability": "DEX", "prof": 2},
-    }
+    },
 }
 
-def skill_modifier(skill_name):
-    skill = character["skills"][skill_name]
-    ability = skill["ability"]
-    return mods[ability] + skill["prof"]
 
-def save_character(character, filename="character.json"):
-    with open(filename, "w") as f:
-        json.dump(character, f, indent=4)
-        
+# ---------- Utility functions (small and well-named) ----------
+def save_character_to_file(character, filename=CHAR_FILE):
+    """Write the character dict to disk as JSON."""
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(character, f, indent=4, ensure_ascii=False)
 
-def load_character(filename="character.json"):
-    with open(filename, "r") as f:
+
+def load_character_from_file(filename=CHAR_FILE):
+    """Return the character dict loaded from JSON (raises FileNotFoundError if missing)."""
+    with open(filename, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
+def calc_mods(stats):
+    """Return ability modifiers (e.g. STR 15 -> +2)."""
+    return {ab: (val - 10) // 2 for ab, val in stats.items()}
+
+
+def roll(d_sides, count=1):
+    """Roll `count` dice of `d_sides` and return the sum."""
+    return sum(random.randint(1, d_sides) for _ in range(count))
+
+
+def roll_with_mod(d_sides, count, mod):
+    """Roll dice and add a flat modifier."""
+    return roll(d_sides, count) + mod
+
+
+def ability_check(character, ability):
+    """Do a 1d20 ability check using the character's modifier for `ability`."""
+    mods = calc_mods(character["stats"])
+    return roll_with_mod(20, 1, mods[ability])
+
+
+def skill_modifier(character, skill_name):
+    """Return the total skill modifier (ability mod + proficiency)."""
+    skill = character["skills"][skill_name]
+    mods = calc_mods(character["stats"])
+    return mods[skill["ability"]] + skill.get("prof", 0)
+
+
+def skill_check(character, skill_name):
+    """Perform a skill check (1d20 + skill modifier)."""
+    return roll(20) + skill_modifier(character, skill_name)
+
 
 def roll_to_hit(weapon):
-    return roll_with_mod(20, 1, weapon['hit_mod'])
+    """Return a single d20 roll + weapon hit modifier."""
+    return roll(20) + weapon.get("hit_mod", 0)
+
 
 def roll_damage(weapon):
-    return roll(weapon["damage_die"], weapon["damage_die_count"]) + weapon["damage_mod"]
+    """Roll weapon damage dice and add damage modifier."""
+    return roll(weapon["damage_die"], weapon["damage_die_count"]) + weapon.get("damage_mod", 0)
 
 
-def mod_formula(stat):
-    value = ((character["stats"][stat] - 10) // 2)
-    return value
-
-mods = {
-    "STR": mod_formula('STR'),
-    "DEX": mod_formula("DEX"),
-    "CON": mod_formula("CON"),
-    "INT": mod_formula("INT"),
-    "WIS": mod_formula("WIS"),
-    "CHA": mod_formula("CHA"),
-}
-
-def roll(d_number, d_count=1):
-    value = 0
-    for i in range(d_count):
-        value += random.randint(1, d_number)
-    return value
-
-def roll_with_mod(d_number, d_count, ability):
-    return (roll(d_number, d_count) + mods[ability])
-
-def ability_check(ability):
-    return roll_with_mod(20, 1, ability)
-
-
-
-
+# ---------- GUI (grouped into small helper sections) ----------
 def gui_app():
-    global character
-    try:
-        character = load_character("character.json")
-    except FileNotFoundError:
-        pass  # stick with defaults if no file
+    # Keep a working (mutable) character dict local to the app.
+    character = copy.deepcopy(DEFAULT_CHARACTER)
 
-    root = tk.Tk()
+    # Try to load saved character (if available) and overwrite defaults.
+    try:
+        loaded = load_character_from_file()
+        character.clear()
+        character.update(loaded)
+    except FileNotFoundError:
+        # It's fine — we'll use the default character and let the user save later.
+        pass
+
+    # Root window
+    root = make_root()
     root.title("D&D Helper")
     root.geometry("800x600")
-    root.configure(bg="#f7f7f7")  # light gray background for the app
 
-    
-    # -- Outer frame with scrolling and scrollbar -- #
-    outer_frame = tk.Frame(root, bg="#f7f7f7")
-    outer_frame.pack(fill="both", expand=True)
+    style = ttk.Style()
+    style.configure("Accent.TButton", font=STYLE["font_normal"], padding=(8, 4))
 
-    canvas = tk.Canvas(outer_frame, bg="#f7f7f7", highlightthickness=0)
+    # Scrollable area setup (common Tk pattern: canvas + inner frame)
+    outer = tk.Frame(root)
+    outer.pack(fill="both", expand=True)
+
+    canvas = tk.Canvas(outer, highlightthickness=0)
     canvas.pack(side="left", fill="both", expand=True)
-    
-    scrollbar = tk.Scrollbar(outer_frame, orient="vertical", command=canvas.yview)
+
+    scrollbar = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
     scrollbar.pack(side="right", fill="y")
-    
     canvas.configure(yscrollcommand=scrollbar.set)
-    
-    scrollable_frame = tk.Frame(canvas, bg="#f7f7f7")
 
-    scrollable_frame.bind(
-        "<Configure>",
-        lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-    )
-    
-    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-    
+    inner = tk.Frame(canvas)
+    canvas.create_window((0, 0), window=inner, anchor="nw")
 
-    # --- Functions ---
-    def update_combat_stats():
-        try:
-            character["hp"]["current"] = int(hp_current_entry.get())
-            character["hp"]["max"] = int(hp_max_entry.get())
-            character["ac"] = int(ac_entry.get())
-        except ValueError:
-            pass
+    def on_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
 
-    def save_to_file():
-        update_combat_stats()
-        update_notes()
-        character["name"] = name_entry.get()
-        save_character(character)
+    inner.bind("<Configure>", on_configure)
 
-    def load_from_file():
-        global character
-        try:
-            character = load_character()
-            # Refresh GUI
-            name_entry.delete(0, tk.END)
-            name_entry.insert(0, character["name"])
-            hp_current_entry.delete(0, tk.END)
-            hp_current_entry.insert(0, character["hp"]["current"])
-            hp_max_entry.delete(0, tk.END)
-            hp_max_entry.insert(0, character["hp"]["max"])
-            ac_entry.delete(0, tk.END)
-            ac_entry.insert(0, character["ac"])
-            notes_text.delete("1.0", tk.END)
-            notes_text.insert("1.0", character["notes"])
-            inventory_listbox.delete(0, tk.END)
-            for item in character["inventory"]:
-                inventory_listbox.insert(tk.END, item)
-        except FileNotFoundError:
-            print("No saved character file found!")
-
-    def update_notes():
-        character["notes"] = notes_text.get("1.0", tk.END).strip()
-        
+    # Platform-sensitive mouse wheel support
     def _on_mousewheel(event):
-        """Scroll for Windows and Linux"""
-        canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        # Windows / Linux: event.delta is multiples of 120
+        canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def _on_mousewheel_mac(event):
-        """Scroll for macOS"""
-        canvas.yview_scroll(int(-1*event.delta), "units")
+        # macOS sends different delta values
+        canvas.yview_scroll(int(-1 * event.delta), "units")
 
-    # Detect platform
     if platform.system() == "Darwin":
-        # macOS
         canvas.bind_all("<MouseWheel>", _on_mousewheel_mac)
     else:
-        # Windows / Linux
         canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
-    # --- Character Info ---
-    info_frame = tk.Frame(scrollable_frame, padx=10, pady=5, bg="#e0e0e0", relief="groove", bd=2)
-    info_frame.pack(fill="x")
-
-    tk.Label(info_frame, text="Character Name:", bg="#e0e0e0", font=("Arial", 10, "bold")).grid(row=0, column=0, sticky="e")
-    name_entry = tk.Entry(info_frame, width=20)
-    name_entry.insert(0, character["name"])
-    name_entry.grid(row=0, column=1, sticky="w")
-
-    tk.Label(
-        info_frame,
-        text=f'Level {character["level"]} {character["race"]} {character["class"]}'
-    ).grid(row=0, column=2, padx=10)
-
-    # --- Ability Checks ---
-    stats_frame = tk.LabelFrame(scrollable_frame, text="Ability Checks", padx=10, pady=5, bg="#f0f0ff", font=("Arial", 10, "bold"))
-    stats_frame.pack(fill="x", pady=5)
-
-    result_labels = {}
-    for col, ability in enumerate(character["stats"].keys()):
-        btn = tk.Button(
-            stats_frame,
-            text=f"{ability} ({mods[ability]})",
-            command=lambda a=ability: result_labels[a].config(text=ability_check(a))
-        )
-        btn.grid(row=0, column=col, padx=5, pady=2)
-        lbl = tk.Label(stats_frame, text="", bg="#f0f0ff")
-        lbl.grid(row=1, column=col)
-        result_labels[ability] = lbl
-        
-    # --- Skills Section ---
-    skills_frame = tk.LabelFrame(scrollable_frame, text="Skills", padx=10, pady=5, bg="#f0fff0", font=("Arial", 10, "bold"))
-    skills_frame.pack(fill="x", padx=10, pady=5)
-
+    # ---------- Helper to refresh UI widgets from `character` ----------
+    # We'll create widget references below and update them here.
+    stats_buttons = {}
+    stats_result_labels = {}
+    skill_buttons = {}
     skill_result_labels = {}
+    inventory_listbox = None
+    notes_text = None
+    hp_current_entry = None
+    hp_max_entry = None
+    ac_entry = None
+    name_entry = None
+    initiative_result_label = None
+
+    def refresh_ui():
+        """Update UI widgets so they reflect the current `character` data."""
+        mods = calc_mods(character["stats"])
+
+        # Basic fields
+        name_entry.delete(0, tk.END)
+        name_entry.insert(0, character["name"])
+        hp_current_entry.delete(0, tk.END)
+        hp_current_entry.insert(0, character["hp"]["current"])
+        hp_max_entry.delete(0, tk.END)
+        hp_max_entry.insert(0, character["hp"]["max"])
+        ac_entry.delete(0, tk.END)
+        ac_entry.insert(0, character["ac"])
+        notes_text.delete("1.0", tk.END)
+        notes_text.insert("1.0", character.get("notes", ""))
+
+        # Inventory
+        inventory_listbox.delete(0, tk.END)
+        for it in character.get("inventory", []):
+            inventory_listbox.insert(tk.END, it)
+
+        # Update stats & skill button labels to show current modifiers
+        for ab, btn in stats_buttons.items():
+            mod = mods[ab]
+            btn.config(text=f"{ab} ({mod:+d})")
+            stats_result_labels[ab].config(text="")  # clear last result
+
+        for sk, btn in skill_buttons.items():
+            # show total skill modifier (ability mod + prof)
+            sk_mod = skill_modifier(character, sk)
+            btn.config(text=f"{sk} ({sk_mod:+d})")
+            skill_result_labels[sk].config(text="")  # clear last result
+
+        # Clear initiative result
+        if initiative_result_label:
+            initiative_result_label.config(text="")
+
+    # ---------- Top: Character info ----------
+    info_frame = ttk.Frame(inner, padding=8)
+    info_frame.pack(fill="x", padx=6, pady=4)
+
+    ttk.Label(info_frame, text="Character Name:", font=STYLE["font_normal"]).grid(row=0, column=0, sticky="e", padx=6)
+    name_entry = tk.Entry(info_frame, width=24, font=STYLE["font_normal"])
+    name_entry.grid(row=0, column=1, sticky="w", padx=6)
+    ttk.Label(info_frame, text=f'Level {character["level"]} {character["race"]} {character["class"]}', font=STYLE["font_normal"]).grid(row=0, column=2, padx=10)
+
+    # ---------- Ability checks ----------
+    stats_frame = ttk.LabelFrame(inner, text="Ability Checks", padding=8)
+    stats_frame.pack(fill="x", padx=6, pady=6)
+
+    # one button per ability, and a label for result beneath it
+    for col, ability in enumerate(character["stats"].keys()):
+        # result label (shows the numeric roll result)
+        res_lbl = ttk.Label(stats_frame, text="", font=STYLE["font_normal"])
+        res_lbl.grid(row=1, column=col, padx=6, pady=4)
+        stats_result_labels[ability] = res_lbl
+
+        # button runs an ability_check and shows the result in the label
+        btn = ttk.Button(
+            stats_frame,
+            text=ability,  # will be updated by refresh_ui()
+            command=lambda a=ability: stats_result_labels[a].config(text=str(ability_check(character, a))),
+            style="Accent.TButton"
+        )
+        btn.grid(row=0, column=col, padx=6, pady=4)
+        stats_buttons[ability] = btn
+
+    # ---------- Skills ----------
+    skills_frame = ttk.LabelFrame(inner, text="Skills", padding=8)
+    skills_frame.pack(fill="x", padx=6, pady=6)
 
     for i, skill_name in enumerate(character["skills"].keys()):
-        mod = skill_modifier(skill_name)
+        row = (i // 3) * 2       # two rows per skill (button + result label)
+        col = (i % 3)
+        sk_res_lbl = ttk.Label(skills_frame, text="", font=STYLE["font_normal"])
+        sk_res_lbl.grid(row=row + 1, column=col, padx=6, pady=4, sticky="w")
+        skill_result_labels[skill_name] = sk_res_lbl
 
-        row = i // 3
-        col = (i % 3) * 2  # leave space for button + label
-
-        btn = tk.Button(
+        sk_btn = ttk.Button(
             skills_frame,
-            text=f"{skill_name} ({mod:+})",
-            wraplength=150,
-            justify="center",
-            relief="flat",   # or "groove"/"ridge" if you want some border
-            bd=0,
-            command=lambda s=skill_name: skill_result_labels[s].config(
-                text=f"{roll(20) + skill_modifier(s)}"
-            )
+            text=skill_name,  # will be updated by refresh_ui()
+            command=lambda s=skill_name: skill_result_labels[s].config(text=str(skill_check(character, s))),
+            style="Accent.TButton"
         )
-        btn.grid(row=row*2, column=col, sticky="w", pady=2)
+        sk_btn.grid(row=row, column=col, padx=6, pady=4, sticky="w")
+        skill_buttons[skill_name] = sk_btn
 
-        lbl = tk.Label(skills_frame, text="", bg="#f0fff0")
-        lbl.grid(row=row*2+1, column=col, sticky="w")
+    # ---------- Custom roller ----------
+    roller_frame = ttk.LabelFrame(inner, text="Custom Roller", padding=8)
+    roller_frame.pack(fill="x", padx=6, pady=6)
 
-        skill_result_labels[skill_name] = lbl
-
-    # --- Custom Roller ---
-    roller_frame = tk.LabelFrame(scrollable_frame, text="Custom Roller", padx=10, pady=5, bg="#f0fff0", font=("Arial", 10, "bold"))
-    roller_frame.pack(fill="x", pady=5)
-
-    dice_count_entry = tk.Entry(roller_frame, width=5)
+    dice_count_entry = tk.Entry(roller_frame, width=5, font=STYLE["font_normal"])
     dice_count_entry.insert(0, "1")
-    dice_count_entry.grid(row=0, column=0)
+    dice_count_entry.grid(row=0, column=0, padx=6)
 
-    tk.Label(roller_frame, text="d", bg="#f0fff0").grid(row=0, column=1)
-    dice_sides_entry = tk.Entry(roller_frame, width=5)
+    ttk.Label(roller_frame, text="d", font=STYLE["font_normal"]).grid(row=0, column=1)
+    dice_sides_entry = tk.Entry(roller_frame, width=6, font=STYLE["font_normal"])
     dice_sides_entry.insert(0, "20")
-    dice_sides_entry.grid(row=0, column=2)
+    dice_sides_entry.grid(row=0, column=2, padx=6)
 
-    result_label = tk.Label(roller_frame, text="", bg="#f0fff0")
-    result_label.grid(row=1, column=0, columnspan=3, pady=5)
+    custom_result_lbl = ttk.Label(roller_frame, text="", font=STYLE["font_normal"])
+    custom_result_lbl.grid(row=1, column=0, columnspan=4, pady=6)
 
     def roll_custom():
         try:
-            count = int(dice_count_entry.get())
+            cnt = int(dice_count_entry.get())
             sides = int(dice_sides_entry.get())
-            result = roll(sides, count)
-            result_label.config(text=f"Rolled {count}d{sides}: {result}")
+            total = roll(sides, cnt)
+            custom_result_lbl.config(text=f"Rolled {cnt}d{sides}: {total}")
         except ValueError:
-            result_label.config(text="Please enter valid numbers!")
+            custom_result_lbl.config(text="Please enter valid whole numbers")
 
-    roll_button = tk.Button(roller_frame, text="Roll!", command=roll_custom, relief="flat", bd=0, padx=5, pady=5, highlightthickness=0)
-    roll_button.grid(row=0, column=3, padx=10)
+    ttk.Button(roller_frame, text="Roll!", command=roll_custom, style="Accent.TButton").grid(row=0, column=3, padx=8)
 
-    # --- Weapons ---
-    weapons_frame = tk.LabelFrame(scrollable_frame, text="Weapons", padx=10, pady=5,  bg="#f7f0ff", font=("Arial", 10, "bold"))
-    weapons_frame.pack(fill="x", pady=5)
+    # ---------- Weapons ----------
+    weapons_frame = ttk.LabelFrame(inner, text="Weapons", padding=8)
+    weapons_frame.pack(fill="x", padx=6, pady=6)
 
-    for row, (weapon_name, weapon) in enumerate(character["weapons"].items()):
-        tk.Label(weapons_frame, text=weapon_name, bg="#f7f0ff").grid(row=row, column=0, padx=5, sticky="w")
+    for r, (w_name, w_data) in enumerate(character["weapons"].items()):
+        ttk.Label(weapons_frame, text=w_name, font=STYLE["font_normal"]).grid(row=r, column=0, padx=6, pady=4, sticky="w")
 
-        hit_result = tk.Label(weapons_frame, text="", bg="#f7f0ff")
-        hit_result.grid(row=row, column=2, padx=5)
-        tk.Button(
-            weapons_frame, text="Roll to Hit",
-            command=lambda w=weapon, lbl=hit_result: lbl.config(
-                text=f"Hit: {roll(20) + w['hit_mod']}",
-                background="FFFFFF"
-            ),
-            bg="#FFFFFF", relief="raised", bd=2, padx=5, pady=3
-        ).grid(row=row, column=1, padx=5)
+        hit_lbl = ttk.Label(weapons_frame, text="", font=STYLE["font_normal"])
+        hit_lbl.grid(row=r, column=2, padx=6, pady=4)
+        ttk.Button(
+            weapons_frame,
+            text="Roll to Hit",
+            command=lambda wd=w_data, lbl=hit_lbl: lbl.config(text=f"Hit: {roll_to_hit(wd)}"),
+            style="Accent.TButton"
+        ).grid(row=r, column=1, padx=6, pady=4)
 
-        dmg_result = tk.Label(weapons_frame, text="", bg="#f7f0ff")
-        dmg_result.grid(row=row, column=4, padx=5)
-        tk.Button(
-            weapons_frame, text="Roll Damage",
-            command=lambda w=weapon, lbl=dmg_result: lbl.config(
-                text=f"Damage: {roll(w['damage_die'], w['damage_die_count']) + w['damage_mod']}",
-            ),
-            bg="#ffd0d0", relief="raised", bd=2, padx=5, pady=3
-        ).grid(row=row, column=3, padx=5)
+        dmg_lbl = ttk.Label(weapons_frame, text="", font=STYLE["font_normal"])
+        dmg_lbl.grid(row=r, column=4, padx=6, pady=4)
+        ttk.Button(
+            weapons_frame,
+            text="Roll Damage",
+            command=lambda wd=w_data, lbl=dmg_lbl: lbl.config(text=f"Damage: {roll_damage(wd)}"),
+            style="Accent.TButton"
+        ).grid(row=r, column=3, padx=6, pady=4)
 
-    # --- Combat Stats ---
-    combat_frame = tk.LabelFrame(scrollable_frame, text="Combat Stats", padx=10, pady=5, bg="#f0fff7", font=("Arial", 10, "bold"))
-    combat_frame.pack(fill="x", pady=5)
+    # ---------- Combat stats (HP / AC / Initiative) ----------
+    combat_frame = ttk.LabelFrame(inner, text="Combat Stats", padding=8)
+    combat_frame.pack(fill="x", padx=6, pady=6)
 
-    tk.Label(combat_frame, text="HP:", bg="#f0fff7").grid(row=0, column=0, sticky="e")
-    hp_current_entry = tk.Entry(combat_frame, width=5)
-    hp_current_entry.insert(0, character["hp"]["current"])
-    hp_current_entry.grid(row=0, column=1)
-    tk.Label(combat_frame, text="/", bg="#f0fff7").grid(row=0, column=2)
-    hp_max_entry = tk.Entry(combat_frame, width=5)
-    hp_max_entry.insert(0, character["hp"]["max"])
-    hp_max_entry.grid(row=0, column=3)
+    ttk.Label(combat_frame, text="HP:", font=STYLE["font_normal"]).grid(row=0, column=0, sticky="e")
+    hp_current_entry = tk.Entry(combat_frame, width=6, font=STYLE["font_normal"])
+    hp_current_entry.grid(row=0, column=1, padx=6)
+    ttk.Label(combat_frame, text="/", font=STYLE["font_normal"]).grid(row=0, column=2)
+    hp_max_entry = tk.Entry(combat_frame, width=6, font=STYLE["font_normal"])
+    hp_max_entry.grid(row=0, column=3, padx=6)
 
-    tk.Label(combat_frame, text="AC:", bg="#f0fff7").grid(row=1, column=0, sticky="e")
-    ac_entry = tk.Entry(combat_frame, width=5)
-    ac_entry.insert(0, character["ac"])
-    ac_entry.grid(row=1, column=1)
+    ttk.Label(combat_frame, text="AC:", font=STYLE["font_normal"]).grid(row=1, column=0, sticky="e")
+    ac_entry = tk.Entry(combat_frame, width=6, font=STYLE["font_normal"])
+    ac_entry.grid(row=1, column=1, padx=6)
 
     def roll_initiative():
-        roll_val = random.randint(1, 20)
-        total = roll_val + mods["DEX"]
-        initiative_result_label.config(text=total)
+        mods = calc_mods(character["stats"])
+        initiative_result_label.config(text=str(roll(20) + mods["DEX"]))
 
-    tk.Label(combat_frame, text="Initiative:", bg="#f0fff7").grid(row=2, column=0, sticky="e")
-    initiative_button = tk.Button(combat_frame, text=f"{mods['DEX']:+}", command=roll_initiative)
-    initiative_button.grid(row=2, column=1)
-    initiative_result_label = tk.Label(combat_frame, text="", )
-    initiative_result_label.grid(row=2, column=2, sticky="w")
+    ttk.Label(combat_frame, text="Initiative:", font=STYLE["font_normal"]).grid(row=2, column=0, sticky="e")
+    ttk.Button(combat_frame, text="+DEX", command=roll_initiative, style="Accent.TButton").grid(row=2, column=1, padx=6)
+    initiative_result_label = ttk.Label(combat_frame, text="", font=STYLE["font_normal"])
+    initiative_result_label.grid(row=2, column=2, padx=6)
 
-    # --- Notes and Inventory (side by side) ---
-    bottom_frame = tk.Frame(scrollable_frame, padx=10, pady=5, bg="#f7f7f7")
-    bottom_frame.pack(fill="both", expand=True)
+    # ---------- Notes and Inventory ----------
+    bottom_frame = ttk.Frame(inner)
+    bottom_frame.pack(fill="both", expand=True, padx=6, pady=6)
 
-    notes_frame = tk.LabelFrame(bottom_frame, text="Notes", padx=10, pady=5)
-    notes_frame.pack(side="left", fill="both", expand=True, padx=5)
-
-    notes_text = tk.Text(notes_frame, height=10, wrap="word")
-    notes_text.insert("1.0", character["notes"])
+    notes_frame = ttk.LabelFrame(bottom_frame, text="Notes", padding=8)
+    notes_frame.pack(side="left", fill="both", expand=True, padx=6, pady=6)
+    notes_text = tk.Text(notes_frame, height=10, wrap="word", font=STYLE["font_normal"])
     notes_text.pack(fill="both", expand=True)
 
-    inventory_frame = tk.LabelFrame(bottom_frame, text="Inventory", padx=10, pady=5)
-    inventory_frame.pack(side="right", fill="both", expand=True, padx=5)
+    inventory_frame = ttk.LabelFrame(bottom_frame, text="Inventory", padding=8)
+    inventory_frame.pack(side="right", fill="both", expand=True, padx=6, pady=6)
 
-    inventory_listbox = tk.Listbox(inventory_frame, height=10)
-    inventory_listbox.pack(fill="both", expand=True)
-    for item in character["inventory"]:
-        inventory_listbox.insert(tk.END, item)
+    inventory_listbox = tk.Listbox(inventory_frame, height=10, font=STYLE["font_normal"])
+    inventory_listbox.pack(fill="both", expand=True, padx=6, pady=6)
 
-    new_item_entry = tk.Entry(inventory_frame)
-    new_item_entry.pack(fill="x", pady=2)
+    new_item_entry = tk.Entry(inventory_frame, font=STYLE["font_normal"])
+    new_item_entry.pack(fill="x", padx=6)
 
     def add_item():
-        item = new_item_entry.get().strip()
-        if item:
-            character["inventory"].append(item)
-            inventory_listbox.insert(tk.END, item)
+        it = new_item_entry.get().strip()
+        if it:
+            character.setdefault("inventory", []).append(it)
+            inventory_listbox.insert(tk.END, it)
             new_item_entry.delete(0, tk.END)
 
-    def remove_item():
-        selection = inventory_listbox.curselection()
-        if selection:
-            index = selection[0]
-            inventory_listbox.delete(index)
-            del character["inventory"][index]
+    def remove_selected_item():
+        sel = inventory_listbox.curselection()
+        if sel:
+            idx = sel[0]
+            inventory_listbox.delete(idx)
+            del character["inventory"][idx]
 
-    tk.Button(inventory_frame, text="Add", command=add_item, bg="#d0ffd0", relief="raised", bd=2, padx=5, pady=3).pack(side="left", padx=2, pady=2)
-    tk.Button(inventory_frame, text="Remove Selected", command=remove_item, bg="#ffd0d0", relief="raised", bd=2, padx=5, pady=3).pack(side="right", padx=2, pady=2)
+    btn_row = ttk.Frame(inventory_frame)
+    btn_row.pack(fill="x", pady=6)
+    ttk.Button(btn_row, text="Add", command=add_item, style="Accent.TButton").pack(side="left", padx=6)
+    ttk.Button(btn_row, text="Remove Selected", command=remove_selected_item, style="Accent.TButton").pack(side="right", padx=6)
 
-    # --- Save / Load Buttons ---
-    control_frame = tk.Frame(scrollable_frame, pady=10, bg="#f7f7f7")
-    control_frame.pack(fill="x")
-    tk.Button(control_frame, text="Save Character", command=save_to_file, bg="#d0ffd0", relief="raised", bd=2, padx=10, pady=5).pack(side="left", padx=10)
-    tk.Button(control_frame, text="Load Character", command=load_from_file, bg="#ffffc0", relief="raised", bd=2, padx=10, pady=5).pack(side="left", padx=10)
+    # ---------- Save / Load controls ----------
+    def update_combat_and_notes_from_ui():
+        # Safely read numeric fields and update character dict
+        try:
+            character["hp"]["current"] = int(hp_current_entry.get())
+        except Exception:
+            pass
+        try:
+            character["hp"]["max"] = int(hp_max_entry.get())
+        except Exception:
+            pass
+        try:
+            character["ac"] = int(ac_entry.get())
+        except Exception:
+            pass
+        character["notes"] = notes_text.get("1.0", tk.END).strip()
+        character["name"] = name_entry.get().strip()
 
+    def save_character_action():
+        update_combat_and_notes_from_ui()
+        save_character_to_file(character)
+
+    def load_character_action():
+        try:
+            loaded = load_character_from_file()
+            # update the existing dictionary in-place so closures keep working
+            character.clear()
+            character.update(loaded)
+            refresh_ui()
+        except FileNotFoundError:
+            print("No saved character file found.")
+
+    control_frame = ttk.Frame(inner, padding=8)
+    control_frame.pack(fill="x", padx=6, pady=6)
+    ttk.Button(control_frame, text="Save Character", command=save_character_action, style="Accent.TButton").pack(side="left", padx=6)
+    ttk.Button(control_frame, text="Load Character", command=load_character_action, style="Accent.TButton").pack(side="left", padx=6)
+
+    # Final UI sync
+    refresh_ui()
+
+    # Start the GUI loop
     root.mainloop()
-    
+
+
 if __name__ == "__main__":
     gui_app()
