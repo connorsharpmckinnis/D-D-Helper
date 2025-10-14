@@ -22,5 +22,69 @@
     "Wyvern": {
         "entry": "A draconic creature with two legs and wings, often depicted as a fierce predator with a venomous sting or breath weapon.",
         "category": "Creatures"
+    },
+    "Glass Ocean": {
+        "entry": "A large ocean in Tehar that separates the continents of Asope and Namer. It is known for being usually tranquil but capable of sudden, violent storms.",
+        "category": "Geography"
+    },
+    "Asope": {
+        "entry": "A major continent in Tehar, separated from Namer by the Glass Ocean.",
+        "category": "Geography"
+    },
+    "Namer": {
+        "entry": "A major continent in Tehar, separated from Asope by the Glass Ocean.",
+        "category": "Geography"
+    },
+    "Men of Tehar": {
+        "entry": "Men in Tehar are known for their adaptability and resilience. They are often found in bustling cities and frontier towns, forming the backbone of many of Tehar's societies. Their relatively short lifespans encourage a drive for achievement and a focus on building lasting legacies.",
+        "category": "Society"
+    },
+    "Elves of Tehar": {
+        "entry": "Elves in Tehar are deeply connected to nature and magic. They tend to live in ancient forests or secluded, serene communities, valuing wisdom, artistry, and the preservation of natural balance. Their long lives give them a unique perspective on history and the world.",
+        "category": "Society"
+    },
+    "Dwarves of Tehar": {
+        "entry": "Dwarves of Tehar are master craftspeople, miners, and warriors, renowned for their loyalty and stubbornness. They dwell in magnificent underground cities carved into mountains, their society built on honor, tradition, and the bounty of the earth. They have a deep appreciation for finely crafted goods and strong ale.",
+        "category": "Society"
+    },
+    "Gnomes of Tehar": {
+        "entry": "Gnomes in Tehar are inventive and curious, with a natural talent for tinkering, illusion, and alchemy. They often live in hidden communities, sometimes in burrows or whimsical treetop villages. Their love for intricate mechanisms and a good-hearted prank makes them beloved, if sometimes unpredictable, members of Tehar's diverse populace.",
+        "category": "Society"
+    },
+    "Lion": {
+        "entry": "A large feline predator, often depicted with a majestic mane. Known for its strength and roar.\nA large feline predator, known for its majestic mane and powerful roar. Often found in grasslands and savannas, lions are apex predators that hunt in prides.",
+        "category": "Creatures"
+    },
+    "Tuna": {
+        "entry": "A type of fish.",
+        "category": "Creatures"
+    },
+    "Catfish": {
+        "entry": "A type of fish found in the rivers and lakes of Tehar.",
+        "category": "Creatures"
+    },
+    "Rabbit": {
+        "entry": "A common, long-eared mammal known for its speed and prolific breeding habits.",
+        "category": "Creatures"
+    },
+    "Deer": {
+        "entry": "A common herbivore found in forests and plains.",
+        "category": "Creatures"
+    },
+    "Bear": {
+        "entry": "Bears are large, powerful mammals known for their strength and predatory nature. They are found in various habitats, from dense forests to open plains. Different species exhibit diverse diets, ranging from omnivorous to strictly carnivorous.",
+        "category": "Creatures"
+    },
+    "Wolf": {
+        "entry": "A common carnivorous mammal known for its pack behavior and predatory prowess.",
+        "category": "Creatures"
+    },
+    "Squirrel": {
+        "entry": "A common, small, rodent known for its bushy tail and agile movements. Squirrels are often found in forests and urban parks, where they gather and store nuts and seeds.",
+        "category": "Creatures"
+    },
+    "Frog": {
+        "entry": "A common amphibian found in many watery or moist environments. Known for their croaking and leaping abilities.",
+        "category": "Creatures"
     }
 }

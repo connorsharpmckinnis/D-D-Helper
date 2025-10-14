@@ -120,7 +120,16 @@ def save_catalog_entry(function_call, file_path=None):
         if not name or not text:
             raise ValueError(f"Each entry must include 'name' and 'entry'. Problematic entry: {e}")
 
-        catalog[name] = {"entry": text, "category": category}
+        # If entry already exists, append the new text
+        if name in catalog:
+            existing_text = catalog[name].get("entry", "")
+            catalog[name]["entry"] = existing_text + "\n" + text
+            # Optional: update category only if it differs or leave it as-is
+            if catalog[name].get("category") != category:
+                catalog[name]["category"] = category
+        else:
+            catalog[name] = {"entry": text, "category": category}
+
         saved_names.append(name)
 
     # Save updated catalog
@@ -189,23 +198,23 @@ def display_message(sender, message, msg_type=None, color=None):
     msg_type: "user", "ai", "system" (defaults to black if unknown)
     color: optional override for msg_type
     """
-    # Define default colors per message type
     type_colors = {
         "user": "blue",
         "ai": "purple",
         "system": "green"
     }
 
-    # Decide which color to use
     final_color = color or type_colors.get(msg_type, "black")
 
-    # Insert sender name
-    chat_display.insert(tk.END, f"{sender}: ", ("sender",))
-    chat_display.insert(tk.END, f"{message}\n\n", ("color",))
+    # Create a unique tag for this message
+    tag_name = f"{msg_type}_{chat_display.index('end')}"  # index ensures uniqueness
 
-    # Configure tags
-    chat_display.tag_configure("sender", font=("Consolas", 11, "bold"))
-    chat_display.tag_configure("color", foreground=final_color, font=("Consolas", 11))
+    chat_display.insert(tk.END, f"{sender}: ", (f"{tag_name}_sender",))
+    chat_display.insert(tk.END, f"{message}\n\n", (f"{tag_name}_color",))
+
+    # Configure the sender and color tags
+    chat_display.tag_configure(f"{tag_name}_sender", font=("Consolas", 11, "bold"))
+    chat_display.tag_configure(f"{tag_name}_color", foreground=final_color, font=("Consolas", 11))
 
     chat_display.see(tk.END)
 
