@@ -86,5 +86,33 @@
     "Frog": {
         "entry": "A common amphibian found in many watery or moist environments. Known for their croaking and leaping abilities.",
         "category": "Creatures"
+    },
+    "Planetary Magic System": {
+        "entry": "The planet's crust is infused with magical elements that generate a unique magical field, similar to electromagnetism. Innate magical abilities are common, influenced by an individual's physiology and diet, functioning akin to essential minerals. Individuals can develop their magic through two primary methods: internal manipulation, which is powerful but risky due to the magic being condensed within them, and external manipulation, which is less potent but far more common, involving the control of the ambient magical field.",
+        "category": "Magic"
+    },
+    "Phoenix": {
+        "entry": "A majestic bird of prey, wreathed in flames, known for its ability to be reborn from its own ashes.",
+        "category": "Creatures"
+    },
+    "Griffin": {
+        "entry": "A creature with the body, tail, and back legs of a lion; the head and wings of an eagle; and an eagle's talons as its front feet.",
+        "category": "Creatures"
+    },
+    "Chimera": {
+        "entry": "A monstrous fire-breathing hybrid creature, typically depicted as a lion, with the head of a goat arising from its back, and a tail that might end with a serpent's head.",
+        "category": "Creatures"
+    },
+    "Dragon": {
+        "entry": "A large, winged, fire-breathing reptile, often depicted as a symbol of power and destruction.",
+        "category": "Creatures"
+    },
+    "Unicorn": {
+        "entry": "A mythical horse with a single, pointed, spiraling horn projecting from its forehead, often associated with purity and grace.",
+        "category": "Creatures"
+    },
+    "Kraken": {
+        "entry": "A legendary sea monster of enormous size, said to dwell off the coasts of Norway and Greenland, often depicted as a giant squid or octopus.",
+        "category": "Creatures"
     }
 }

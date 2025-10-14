@@ -145,14 +145,13 @@ def respond(message, history=None):
     # Get world context
     world_context = get_world_context()
     prompt = f"SYSTEM MESSAGE: Here is a summary of the world catalog so far:\n{world_context}\n\n Here is the user's latest prompt: {message}"
-    contents = [
-    types.Content(
-        role="user", parts=[types.Part(text=prompt)]
-    )
-    ]   
+    contents.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
+     
     print(contents)
 
-    response = client.models.generate_content(model="gemini-2.5-flash-lite", contents=contents, config=config)
+    response = chat.send_message(config=config, message=prompt)
+
+    #response = client.models.generate_content(model="gemini-2.5-flash-lite", contents=contents, config=config)
 
     for part in response.candidates[0].content.parts:
         if hasattr(part, "function_call") and part.function_call:
@@ -176,4 +175,4 @@ def respond(message, history=None):
     return output
 
 demo = gr.ChatInterface(fn=respond, type="messages", examples=["hello", "hola", "merhaba"], title="Echo Bot")
-demo.launch()
+demo.launch(share=True)
