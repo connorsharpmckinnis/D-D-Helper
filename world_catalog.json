@@ -1,42 +1,26 @@
 {
-    "Asope": {
-        "entry": "A culture in Tehar with influences vaguely resembling European societies.",
-        "category": "Cultures and Societies"
-    },
-    "Asope and Namer": {
-        "entry": "Tehar has two continents: Asope and Namer.",
-        "category": "Geography and Regions"
-    },
     "Tehar": {
-        "entry": "The name of the world.",
-        "category": "Nations and Kingdoms"
-    },
-    "Continents and Oceans of Tehar": {
-        "entry": "Tehar has two major continents, Asope and Namer",
+        "entry": "Tehar is a wild and untamed world for the most part, with towns and cities being fairly rare but growing quick. The world is on the cusp of what we would compare to the industrial revolution, but largely powered by magical artifice instead of fossil fuels.",
         "category": "Geography and Regions"
     },
-    "Golmang": {
-        "entry": "Golmang is a warring kingdom in Tehar.",
-        "category": "Nations and Kingdoms"
+    "Minotaur": {
+        "entry": "Hulking, bipedal beings possessing the head and hindquarters of a bull, and the torso and arms of a man. Minotaurs are known for their immense strength, territorial nature, and a deep, resonant bellow that can shake the very foundations of the earth. They often dwell in labyrinthine cave systems or remote, rocky highlands, fiercely guarding their domains. While often perceived as simple brutes, some Minotaur tribes possess a complex social structure and a rich oral tradition, passed down through generations of chanted sagas. Their diet consists mainly of hardy mountain vegetation and any unfortunate creatures that wander too close.",
+        "category": "Creatures"
     },
-    "Trade between Asope and Namer": {
-        "entry": "Asope and Namer engage in significant trade across the Glass Sea.",
-        "category": "Economy and Trade"
+    "Hydra": {
+        "entry": "A multi-headed reptilian beast, often aquatic, with regenerative capabilities. Each severed head may regrow, sometimes as two.",
+        "category": "Creatures"
     },
-    "The World Eyes": {
-        "entry": "The Namer Republic is establishing a network of powerful magical monitoring stations, known as World Eyes, throughout the neutral ocean territories. These stations are ostensibly for observation but are primarily used to spy on foreign powers, particularly those in Asope, creating significant geopolitical tension.",
-        "category": "Politics and Government"
+    "Manticore": {
+        "entry": "The Manticore of the Crimson Peaks is a fearsome predator known for its lion-like body, bat-like wings, and a tail tipped with venomous spines. These creatures are solitary hunters, fiercely territorial, and often found in high-altitude, rocky terrains. Their roars are said to mimic the screams of the damned, striking terror into the hearts of any who hear them. Legend has it that their venom, when mixed with certain rare herbs, can be used as a potent, albeit dangerous, alchemical ingredient.",
+        "category": "Creatures"
     },
-    "Kino": {
-        "entry": "Kino is the goddess of the sun, worshipped in Golmang.",
-        "category": "Deities and Pantheons"
+    "Giant Boar": {
+        "entry": "A massive, tusked boar of immense strength and aggression, often found in dense forests and known for its territorial nature.",
+        "category": "Creatures"
     },
-    "Squishy": {
-        "entry": "A mysterious life form found in the world.",
-        "category": "Flora and Fauna"
-    },
-    "ASDF": {
-        "entry": "ASDF",
-        "category": "Flora and Fauna"
+    "Wyvern": {
+        "entry": "A draconic creature with two legs and wings, often depicted as a fierce predator with a venomous sting or breath weapon.",
+        "category": "Creatures"
     }
 }

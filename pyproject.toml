@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "customtkinter>=5.2.2",
+    "dotenv>=0.9.9",
     "google-genai>=1.42.0",
     "ipykernel>=6.30.1",
     "python-dotenv>=1.1.1",

@@ -17,7 +17,7 @@ file_label = None
 client = genai.Client(api_key=os.getenv("API_KEY"))  # Replace with your real key
 
 # --- Function Declarations ---
-content_function = {
+single_content_function = {
     "name": "generate_structured_content",
     "description": "Generates a structured dict of an entry for a worldbuilding catalog based on the conversation with the user. ",
     "parameters": {
@@ -28,21 +28,7 @@ content_function = {
             "category": {
                 "type": "string",
                 "enum": [
-                    "Characters","Races and Species","Cultures and Societies","Languages",
-                    "Religions and Beliefs","Mythology and Legends","Magic and Sorcery",
-                    "Artifacts and Relics","Technology and Inventions","Nations and Kingdoms",
-                    "Cities and Settlements","Geography and Regions","Natural Features",
-                    "Flora and Fauna","Organizations and Factions","Guilds and Orders",
-                    "Economy and Trade","Politics and Government","Military and Warfare",
-                    "Laws and Customs","Calendar and Timekeeping","Cosmology and Planes",
-                    "Deities and Pantheons","Notable Events","Historical Eras",
-                    "Conflicts and Wars","Heroes and Villains","Professions and Occupations",
-                    "Transportation and Travel","Architecture and Structures","Art and Music",
-                    "Cuisine and Food","Fashion and Clothing","Measurement and Currency",
-                    "Education and Scholarship","Science and Alchemy","Entertainment and Games",
-                    "Philosophy and Ethics","Superstitions and Folklore","Important Texts and Tomes",
-                    "Climate and Weather","Disease and Medicine","Demography and Population",
-                    "Rituals and Festivals","Prophesies and Omens","Exploration and Discovery"
+                    "Geography","Nations","History","Culture","Society","Economy","Magic","Warfare","Science","Nature","Creatures","Religion","Technology","Mythology","Politics","Exploration","Philosophy"
                 ],
                 "description": "The category of the user's worldbuilding entry."
             }
@@ -51,6 +37,36 @@ content_function = {
     },
 }
 
+content_function = {
+    "name": "generate_structured_content",
+    "description": "Generates one or more structured catalog entries for worldbuilding content.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "entries": {
+                "type": "array",
+                "description": "A list of catalog entries to add to the worldbuilding catalog.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "description": "The name of the catalog entry."},
+                        "entry": {"type": "string", "description": "The content or description for the entry."},
+                        "category": {
+                            "type": "string",
+                            "enum": [
+                                "Geography","Nations","History","Culture","Society","Economy","Magic","Warfare","Science",
+                                "Nature","Creatures","Religion","Technology","Mythology","Politics","Exploration","Philosophy"
+                            ],
+                            "description": "The category of the catalog entry."
+                        }
+                    },
+                    "required": ["name", "entry", "category"]
+                }
+            }
+        },
+        "required": ["entries"]
+    },
+}
 
 
 def choose_file():
@@ -71,70 +87,47 @@ def choose_file():
 # --- Robust Save Catalog Entry ---
 def save_catalog_entry(function_call, file_path=None):
     """
-    Accepts either:
-      - function_call.args (a dict-like), or
-      - function_call.arguments (a JSON string)
-    Writes to JSON safely and forces an fsync so the file is persisted.
-    Returns the saved entry name (or raises).
+    Saves one or more catalog entries from function_call.args['entries'] into a JSON file.
+    Each entry must include: name, entry, and category.
+    Returns a list of saved entry names and the absolute file path.
     """
     global selected_file
     file_path = file_path or selected_file
-    # Try to extract args in a few shapes
-    parsed = {}
-    try:
-        # common: function_call.args (already dict-like)
-        if hasattr(function_call, "args") and function_call.args:
-            parsed = dict(function_call.args)
-        # some SDKs return a JSON string under .arguments
-        elif hasattr(function_call, "arguments") and function_call.arguments:
-            # it might already be a dict or a str
-            raw = function_call.arguments
-            if isinstance(raw, str):
-                parsed = json.loads(raw)
-            elif isinstance(raw, (dict, list)):
-                parsed = dict(raw)
-        else:
-            raise ValueError("function_call has no 'args' or 'arguments' payload.")
-    except Exception as e:
-        # Re-raise with more context
-        raise RuntimeError(f"Failed to parse function_call payload: {e}\nRaw: {getattr(function_call, 'arguments', None)}")
 
-    # Required fields (defensive)
-    entry_name = parsed.get("name")
-    entry_text = parsed.get("entry") or parsed.get("description") or parsed.get("content")
-    category = parsed.get("category", "Uncategorized")
+    parsed = getattr(function_call, "args", None)
+    if not isinstance(parsed, dict):
+        raise ValueError("function_call.args must be a dictionary")
 
-    if not entry_name or not entry_text:
-        raise ValueError(f"Parsed function_call missing name or entry. Parsed payload: {parsed}")
+    entries = parsed.get("entries")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("function_call.args['entries'] must be a non-empty list")
 
-    # Ensure directory exists (in case user passed a path)
+    # Ensure directory exists
     os.makedirs(os.path.dirname(os.path.abspath(file_path)) or ".", exist_ok=True)
 
-    # Read existing or create
+    # Load existing catalog (if present)
     catalog = {}
     if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                catalog = json.load(f)
-        except json.JSONDecodeError:
-            # bad/corrupt JSON -> back it up and start fresh
-            backup_path = file_path + ".bak"
-            os.replace(file_path, backup_path)
-            catalog = {}
-    # Insert/overwrite entry
-    catalog[entry_name] = {"entry": entry_text, "category": category}
+        with open(file_path, "r", encoding="utf-8") as f:
+            catalog = json.load(f)
 
-    # Write atomically: write to temp then replace
-    tmp_path = file_path + ".tmp"
-    with open(tmp_path, "w", encoding="utf-8") as f:
+    saved_names = []
+    for e in entries:
+        name = e.get("name")
+        text = e.get("entry")
+        category = e.get("category", "Uncategorized")
+
+        if not name or not text:
+            raise ValueError(f"Each entry must include 'name' and 'entry'. Problematic entry: {e}")
+
+        catalog[name] = {"entry": text, "category": category}
+        saved_names.append(name)
+
+    # Save updated catalog
+    with open(file_path, "w", encoding="utf-8") as f:
         json.dump(catalog, f, indent=4, ensure_ascii=False)
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp_path, file_path)
 
-    # Return absolute path and name for confirmation
-    return entry_name, os.path.abspath(file_path)
-
+    return saved_names, os.path.abspath(file_path)
 
 def get_world_context(file_path=None):
     global selected_file
@@ -154,12 +147,20 @@ def get_world_context(file_path=None):
     summary = "\n".join(summary_lines) if summary_lines else "No world entries yet."
     return f"Here is the world catalog so far:\n{summary}"
 
-
+system_instruction = (
+    "You are a helpful, thoughtful, and conversational worldbuilding assistant. "
+        "You talk naturally with the user about their world to flesh it out, but when the user explicitly "
+        "instructs you to add or create an entry (for example, by saying 'add this', 'please save', 'put this in the catalog', "
+        "or similar), you must immediately call the `generate_structured_content` function with the relevant data "
+        "and continue the conversation without asking for confirmation. "
+        "Use reasonable defaults for category and structure if the user doesn’t specify them. "
+        "Do not ask permission before saving when the user gives a clear directive."
+)
 
 # --- Chat Setup ---
 tools = types.Tool(function_declarations=[content_function])
-config = types.GenerateContentConfig(tools=[tools], system_instruction="You are a helpful, thoughtful, and conversational worldbuilding assistant. You don't just ask what the user wants to record in their worldbuilding catalog; you talk with them about their world to flesh it out naturally and you quietly execute functions to store their insights into the catalog. Give ideas, suggestions, and other things to add flavor to the world you are building together.")
-chat = client.chats.create(model="gemini-2.5-flash-lite" )
+config = types.GenerateContentConfig(tools=[tools], system_instruction=system_instruction)
+chat = client.chats.create(model="gemini-2.5-flash-lite", config=config)
 
 # --- UI Setup ---
 root = tk.Tk()
@@ -214,27 +215,43 @@ def handle_user_input(event=None):
     if not user_text:
         return
     entry_field.delete(0, tk.END)
-    display_message("You", user_text, msg_type="user",color="blue")
-    
+    display_message("You", user_text, msg_type="user", color="blue")
+
     world_context = get_world_context()
-    
-    prompt = f"SYSTEM MESSAGE: Here is a summary of the world catalog so far: \n{world_context}\n\n Here is the user's latest prompt: {user_text}"
+    prompt = (
+        f"SYSTEM MESSAGE: Here is a summary of the world catalog so far:\n{world_context}\n\n"
+        f"Here is the user's latest prompt: {user_text}"
+    )
 
-    response = chat.send_message(config=config, message=prompt)
+    response = chat.send_message(message=prompt)
 
-    if response.candidates[0].content.parts[0].function_call:
-        function_call = response.candidates[0].content.parts[0].function_call
-        entry_name = save_catalog_entry(function_call)
-        display_message("SYSTEM", f"📘 New entry added: {entry_name[0]}", msg_type="system", color="green")
+    text_output = []
+    function_called = False
 
-        follow_up = (
-            f"SYSTEM MESSAGE: Added '{entry_name}' to catalog. "
-            "You're a collaborative and thoughtful worldbuilding assistant. Please ask a deeper question about their latest entry or suggest a related topic. Be encouraging and helpful. Use your function at your discretion to populate the user's catalog. Don't ask them to pick their own category or name; choose both of those for them. "
+    for part in response.candidates[0].content.parts:
+        # Handle function calls
+        if hasattr(part, "function_call") and part.function_call:
+            saved_names, path = save_catalog_entry(part.function_call)
+            display_message("SYSTEM", f"📘 Saved to catalog: {', '.join(saved_names)}", msg_type="system", color="green")
+            function_called = True
+
+        # Handle text replies
+        elif hasattr(part, "text") and part.text:
+            text_output.append(part.text.strip())
+
+    # Display any text parts together
+    if text_output:
+        display_message("AI", "\n".join(text_output), msg_type="ai", color="purple")
+    elif function_called:
+        # If a function was called but no text was sent, prompt the model to continue
+        follow_up = chat.send_message(
+            message="The entries have been saved. Continue the conversation naturally."
         )
-        response = chat.send_message(message=follow_up)
-
-    bot_reply = response.text.strip() if hasattr(response, "text") else "[No reply]"
-    display_message("AI", bot_reply, msg_type="ai", color="purple")
+        if follow_up and follow_up.candidates:
+            for part in follow_up.candidates[0].content.parts:
+                if hasattr(part, "text") and part.text:
+                    display_message("AI", part.text.strip(), msg_type="ai", color="purple")
+    
 
 entry_field.bind("<Return>", handle_user_input)
 
