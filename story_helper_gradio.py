@@ -12,7 +12,7 @@ client = genai.Client(api_key=os.getenv("API_KEY"))  # Replace with your real ke
 
 system_instruction = (
     "You are a helpful, thoughtful, and conversational worldbuilding assistant. "
-        "You talk naturally with the user about their world to flesh it out, but when the user explicitly "
+        "You talk naturally, if a little dramatically and fantastically, with the user about their world to flesh it out, but when the user explicitly "
         "instructs you to add or create an entry (for example, by saying 'add this', 'please save', 'put this in the catalog', "
         "or similar), you must immediately call the `generate_structured_content` function with the relevant data "
         "and continue the conversation without asking for confirmation. "
@@ -116,9 +116,9 @@ def save_catalog_entry(function_call, file_path='world_catalog.json'):
 
     return saved_names, os.path.abspath(file_path)
 
-def get_world_context(file_path='world_catalog.json'):
+def get_world_context(file_path=None):
     global selected_file
-    file_path = file_path or selected_file
+    file_path = selected_file
     if not file_path:
         return "No file selected."
     
@@ -139,6 +139,15 @@ config = types.GenerateContentConfig(tools=[tools], system_instruction=system_in
 chat = client.chats.create(model="gemini-2.5-flash-lite", config=config)
 
 contents = []
+
+selected_file = None
+
+def select_file(file_obj):
+    global selected_file
+    if file_obj is None:
+        return "No file selected."
+    selected_file = file_obj.name
+    return f"Selected file: {selected_file}"
 
 def respond(message, history=None):
 
@@ -174,5 +183,66 @@ def respond(message, history=None):
 
     return output
 
-demo = gr.ChatInterface(fn=respond, type="messages", examples=["hello", "hola", "merhaba"], title="Echo Bot")
-demo.launch(share=True)
+
+def refresh_catalog():
+    global selected_file
+    if not selected_file or not os.path.exists(selected_file):
+        return []
+    with open(selected_file, "r", encoding="utf-8") as f:
+        catalog = json.load(f)
+    rows = [[name] for name, data in catalog.items()]
+    return rows
+
+def load_entry(evt: gr.SelectData):
+    global selected_file
+    if not selected_file:
+        return "No file selected.", "", ""
+    with open(selected_file, "r", encoding="utf-8") as f:
+        catalog = json.load(f)
+    row_index = evt.index[0]  # first index in (row, col)
+    names = list(catalog.keys())
+    if row_index < len(names):
+        name = names[row_index]
+        entry_data = catalog[name]
+        return name, entry_data.get("entry", ""), entry_data.get("category", "")
+    return "", "", ""
+
+def save_entry(name, text, category):
+    global selected_file
+    if not selected_file:
+        return "No file selected."
+    with open(selected_file, "r", encoding="utf-8") as f:
+        catalog = json.load(f)
+    catalog[name] = {"entry": text, "category": category}
+    with open(selected_file, "w", encoding="utf-8") as f:
+        json.dump(catalog, f, indent=4, ensure_ascii=False)
+    return f"Saved changes to '{name}'."
+
+
+with gr.Blocks(title="Worldbuilding Assistant") as demo:
+    gr.Markdown("# 🌍 Worldbuilding Assistant")
+
+    with gr.Tab("Chat"):
+        file_selector = gr.File(label="Select or upload a JSON catalog", file_types=[".json"])
+        file_output = gr.Textbox(label="Current File", interactive=False)
+
+        chat_interface = gr.ChatInterface(fn=respond, type="messages", title="World Chat")
+
+        file_selector.change(fn=select_file, inputs=file_selector, outputs=file_output)
+
+    with gr.Tab("Catalog Viewer"):
+        catalog_list = gr.Dataframe(headers=["Name"], interactive=False, label="Catalog")
+        selected_entry = gr.Textbox(label="Selected Entry", interactive=True)
+        category_text = gr.Textbox(label="Category", interactive=True)
+        catalog_text = gr.Textbox(label="Entry Content", lines=10, interactive=True)
+        
+
+        catalog_list.select(fn=load_entry, outputs=[selected_entry, catalog_text, category_text])        
+
+        refresh_button = gr.Button(value="Refresh Catalog")
+        refresh_button.click(fn=refresh_catalog, outputs=catalog_list)
+
+        save_button = gr.Button(value="Save Changes")
+        save_status = gr.Textbox(label="Save Status", interactive=False)
+        save_button.click(fn=save_entry, inputs=[selected_entry, catalog_text, category_text], outputs=save_status)
+demo.launch(share=False)
