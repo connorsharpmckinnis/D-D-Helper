@@ -114,5 +114,21 @@
     "Kraken": {
         "entry": "A legendary sea monster of enormous size, said to dwell off the coasts of Norway and Greenland, often depicted as a giant squid or octopus.",
         "category": "Creatures"
+    },
+    "Cat": {
+        "entry": "A common feline creature, often kept as a pet or found in the wild. Known for its agility, hunting prowess, and independent nature.",
+        "category": "Creatures"
+    },
+    "Moose": {
+        "entry": "A large cervid with palmate antlers, found in the northern forests and tundras of Tehar.",
+        "category": "Creatures"
+    },
+    "Squid": {
+        "entry": "A cephalopod with tentacles, often found in oceans.",
+        "category": "Creatures"
+    },
+    "Whale": {
+        "entry": "A large marine mammal, often found in the deepest parts of the ocean. Whales can be solitary or travel in pods, and are known for their songs that travel for miles.",
+        "category": "Creatures"
     }
 }

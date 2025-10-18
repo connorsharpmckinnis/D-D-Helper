@@ -146,7 +146,20 @@ def select_file(file_obj):
     global selected_file
     if file_obj is None:
         return "No file selected."
-    selected_file = file_obj.name
+
+    # Copy uploaded file to a stable local path
+    base_name = os.path.basename(file_obj.name)
+    persistent_path = os.path.join(os.getcwd(), base_name)
+
+    try:
+        # Copy (not move) so the temp file isn't deleted prematurely
+        with open(file_obj.name, "rb") as src, open(persistent_path, "wb") as dst:
+            dst.write(src.read())
+    except FileNotFoundError:
+        # Some Gradio versions already delete temp files; fall back to assuming it's local
+        persistent_path = os.path.join(os.getcwd(), base_name)
+
+    selected_file = persistent_path
     return f"Selected file: {selected_file}"
 
 def respond(message, history=None):
@@ -185,7 +198,7 @@ def respond(message, history=None):
 
 
 def refresh_catalog():
-    global selected_file
+    print(selected_file)
     if not selected_file or not os.path.exists(selected_file):
         return []
     with open(selected_file, "r", encoding="utf-8") as f:
@@ -209,13 +222,14 @@ def load_entry(evt: gr.SelectData):
 
 def save_entry(name, text, category):
     global selected_file
+    print(selected_file)
     if not selected_file:
         return "No file selected."
     with open(selected_file, "r", encoding="utf-8") as f:
         catalog = json.load(f)
     catalog[name] = {"entry": text, "category": category}
     with open(selected_file, "w", encoding="utf-8") as f:
-        json.dump(catalog, f, indent=4, ensure_ascii=False)
+        json.dump(catalog, f, indent=4)
     return f"Saved changes to '{name}'."
 
 
