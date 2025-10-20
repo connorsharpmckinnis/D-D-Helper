@@ -130,5 +130,21 @@
     "Whale": {
         "entry": "A large marine mammal, often found in the deepest parts of the ocean. Whales can be solitary or travel in pods, and are known for their songs that travel for miles.",
         "category": "Creatures"
+    },
+    "Goose": {
+        "entry": "Goose",
+        "category": "Creatures"
+    },
+    "Duck": {
+        "entry": "Duck",
+        "category": "Creatures"
+    },
+    "Elephant": {
+        "entry": "Elephant",
+        "category": "Creatures"
+    },
+    "Goat": {
+        "entry": "A common domesticated animal known for its agility and milk production.",
+        "category": "Creatures"
     }
 }

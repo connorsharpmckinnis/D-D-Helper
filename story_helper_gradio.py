@@ -20,7 +20,10 @@ system_instruction = (
         "Do not ask permission before saving when the user gives a clear directive."
 )
 
-
+choices = [
+    "Geography","Nations","History","Culture","Society","Economy","Magic","Warfare","Science",
+    "Nature","Creatures","Religion","Technology","Mythology","Politics","Exploration","Philosophy"
+]
 
 
 content_function = {
@@ -39,10 +42,7 @@ content_function = {
                         "entry": {"type": "string", "description": "The content or description for the entry."},
                         "category": {
                             "type": "string",
-                            "enum": [
-                                "Geography","Nations","History","Culture","Society","Economy","Magic","Warfare","Science",
-                                "Nature","Creatures","Religion","Technology","Mythology","Politics","Exploration","Philosophy"
-                            ],
+                            "enum": choices,
                             "description": "The category of the catalog entry."
                         }
                     },
@@ -188,6 +188,12 @@ def respond(message, history=None):
                 ", ".join(saved_names)
 
                 output = saved_names_message
+            
+            #send chat message with function confirmation adn get follow-up
+            message = f"SYSTEM: You have just saved the following entries to the catalog: {', '.join(saved_names)}. Please share a message that confirms the saving of these entries and prompts the user to discuss the world in greater depth or suggest a new topic to explore."
+
+            second_response = chat.send_message(config=config, message=message)
+            output = second_response.text
                 
         else: 
             output = response.text
@@ -197,13 +203,20 @@ def respond(message, history=None):
     return output
 
 
-def refresh_catalog():
+def refresh_catalog(search_entry="", filter_choice="All"):
     print(selected_file)
     if not selected_file or not os.path.exists(selected_file):
         return []
     with open(selected_file, "r", encoding="utf-8") as f:
         catalog = json.load(f)
-    rows = [[name] for name, data in catalog.items()]
+        rows = []
+        for name, data in catalog.items():
+            cat = data.get("category", "Uncategorized")
+            if (
+                (filter_choice == "All" or cat == filter_choice)
+                and (search_entry.lower() in name.lower())
+            ):
+                rows.append([name])    
     return rows
 
 def load_entry(evt: gr.SelectData):
@@ -244,7 +257,12 @@ with gr.Blocks(title="Worldbuilding Assistant") as demo:
 
         file_selector.change(fn=select_file, inputs=file_selector, outputs=file_output)
 
+
+    choices_with_all = choices + ["All"]
+
     with gr.Tab("Catalog Viewer"):
+        search_bar = gr.Textbox(label="Search Catalog", interactive=True)
+        category_filter = gr.Dropdown(label="Category", value="All", choices = choices_with_all)
         catalog_list = gr.Dataframe(headers=["Name"], interactive=False, label="Catalog")
         selected_entry = gr.Textbox(label="Selected Entry", interactive=True)
         category_text = gr.Textbox(label="Category", interactive=True)
@@ -255,6 +273,16 @@ with gr.Blocks(title="Worldbuilding Assistant") as demo:
 
         refresh_button = gr.Button(value="Refresh Catalog")
         refresh_button.click(fn=refresh_catalog, outputs=catalog_list)
+        search_bar.change(
+            fn=refresh_catalog,
+            inputs=[search_bar, category_filter],
+            outputs=catalog_list
+        )
+        category_filter.change(
+            fn=refresh_catalog,
+            inputs=[search_bar, category_filter],
+            outputs=catalog_list
+        )
 
         save_button = gr.Button(value="Save Changes")
         save_status = gr.Textbox(label="Save Status", interactive=False)
